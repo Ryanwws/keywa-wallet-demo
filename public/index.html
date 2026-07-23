@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>钱包 Onboarding 交互 Demo</title>
+<style>
+:root{
+  --bg1:#EEF2FD; --bg2:#F7F8FC;
+  --ink:#0B1437; --sub:#6E7891; --mute:#9AA2B6;
+  --primary:#5A51C6; --primary-d:#4A41B8; --primary-l:#EDEBFA;
+  --card:#FFFFFF; --soft:#F1F3F8; --line:#E7EAF2;
+  --red:#F04A5E; --red-bg:#FFE7EA; --green:#16C784; --amber:#F5A623;
+  --r:22px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",Segoe UI,Roboto,sans-serif;
+  background:#12141C; color:var(--ink);
+  display:flex; justify-content:center; gap:28px; padding:28px 20px 60px; min-height:100vh;
+}
+/* ---------- lab panel ---------- */
+.panel{width:290px;flex:0 0 290px;color:#C9CEDC;font-size:13px}
+.panel h1{font-size:16px;color:#fff;margin:0 0 4px}
+.panel .meta{font-size:11px;color:#7B8399;margin-bottom:18px;line-height:1.6}
+.panel h2{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#7B8399;margin:22px 0 10px;font-weight:600}
+.sc{display:block;width:100%;text-align:left;background:#1C1F2B;border:1px solid #262B3A;color:#D8DCE8;
+  padding:11px 13px;border-radius:12px;margin-bottom:8px;cursor:pointer;font-size:13px;line-height:1.45;font-family:inherit}
+.sc:hover{background:#242938;border-color:#39405a}
+.sc b{display:block;color:#fff;font-weight:600;margin-bottom:2px}
+.sc span{color:#7B8399;font-size:11px}
+.langsw{display:flex;gap:6px;margin-bottom:14px}
+.langsw button{flex:1;background:#1C1F2B;border:1px solid #262B3A;color:#9AA2B6;padding:7px;border-radius:9px;cursor:pointer;font-size:12px;font-family:inherit}
+.langsw button.on{background:var(--primary);border-color:var(--primary);color:#fff}
+#log{background:#1C1F2B;border:1px solid #262B3A;border-radius:12px;padding:10px 12px;max-height:230px;overflow:auto;font-size:11px;line-height:1.9;color:#8891A8;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+#log div:last-child{color:#fff}
+/* ---------- phone ---------- */
+.phone{
+  width:375px;flex:0 0 375px;height:812px;background:linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 32%);
+  border-radius:44px;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 10px #23262F,0 0 0 11px #3A3F4E;
+}
+.statusbar{position:absolute;top:0;left:0;right:0;height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 30px 0;font-size:13px;font-weight:600;z-index:40;pointer-events:none}
+.statusbar .icons{display:flex;gap:5px;align-items:center}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:5px;border-radius:3px;background:#0B1437;opacity:.75;z-index:40;pointer-events:none}
+.screen{position:absolute;inset:0;padding:56px 24px 34px;display:none;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.screen.active{display:flex;animation:in .22s ease}
+@keyframes in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+.screen::-webkit-scrollbar{width:0}
+.nav{display:flex;align-items:center;min-height:34px;margin-bottom:6px}
+.back{width:34px;height:34px;margin-left:-6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:var(--ink)}
+.nav .right{margin-left:auto;font-size:13px;color:var(--red);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+h2.t{font-size:26px;font-weight:800;line-height:1.28;margin:8px 0 0;letter-spacing:-.3px}
+h2.t.c{text-align:center}
+p.s{font-size:15px;color:var(--sub);line-height:1.5;margin:10px 0 0}
+p.s.c{text-align:center}
+.spacer{flex:1;min-height:14px}
+.btn{width:100%;height:56px;border:0;border-radius:28px;background:var(--primary);color:#fff;font-size:17px;font-weight:700;
+  cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;transition:.15s}
+.btn:active{transform:scale(.985)}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn:disabled{background:#CFCCEC;color:#fff;cursor:not-allowed}
+.btn.ghost:disabled{background:var(--soft);color:#B9BFCE}
+.btn.sm{height:46px;font-size:15px;border-radius:23px}
+.btn.text{background:none;color:var(--primary);font-size:15px;height:44px;margin-top:6px}
+.hero{width:100%;display:flex;justify-content:center;margin:26px 0 6px}
+.agree{display:flex;align-items:flex-start;gap:9px;margin-top:22px;font-size:13px;color:var(--sub);line-height:1.45;cursor:pointer}
+.cb{width:20px;height:20px;flex:0 0 20px;border-radius:50%;border:1.6px solid #C3C9D8;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:.15s}
+.cb.on{background:var(--ink);border-color:var(--ink)}
+.cb.on::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.cb.sq{border-radius:6px}
+.agree a{color:var(--primary);text-decoration:none}
+.field{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:15px 16px;font-size:16px;
+  font-family:inherit;color:var(--ink);margin-top:16px;outline:none;transition:.15s}
+.field:focus{border-color:var(--primary)}
+.field.err{border-color:var(--red);background:#FFF8F9}
+textarea.field{height:150px;resize:none;line-height:1.6}
+.err-msg{display:none;color:var(--red);font-size:13px;margin-top:9px;line-height:1.5}
+.err-msg.show{display:block}
+.hint{font-size:12px;color:var(--mute);margin-top:9px;line-height:1.5}
+.otp{display:flex;gap:9px;margin-top:24px;position:relative}
+.otp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;background:none;font-size:16px;
+  caret-color:transparent;color:transparent;outline:none;z-index:2;cursor:text}
+.otp b{flex:1;height:58px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;
+  border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);transition:.12s}
+.otp b.on{border-color:var(--primary)}
+.otp b.cur{border-color:var(--primary);box-shadow:0 0 0 3px rgba(90,81,198,.12)}
+.otp.err b{border-color:var(--red);background:#FFF8F9}
+.opt{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;cursor:pointer;transition:.15s}
+.opt:hover{border-color:#C9C5EC}
+.opt.on{border-color:var(--primary);background:#FBFAFF}
+.opt .oh{display:flex;align-items:center;gap:10px}
+.opt .oh b{font-size:16px;font-weight:700}
+.opt .tag{margin-left:auto;font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px;background:var(--primary-l);color:var(--primary)}
+.opt .tag.grey{background:var(--soft);color:var(--sub)}
+.opt p{margin:8px 0 0;font-size:13px;color:var(--sub);line-height:1.55}
+.risk{background:var(--card);border-radius:18px;padding:6px 16px;margin-top:22px}
+.risk .row{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5;color:var(--ink)}
+.risk .row:last-child{border-bottom:0}
+.risk .ic{width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:var(--red-bg);color:var(--red);
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;margin-top:1px}
+.words{position:relative;background:var(--card);border-radius:18px;padding:16px 12px;margin-top:20px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px}
+.words .w{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;background:var(--soft);border-radius:10px;padding:9px 8px}
+.words .w i{font-style:normal;color:var(--mute);font-size:11px;width:14px;text-align:right;font-weight:500}
+.words.blur .w{filter:blur(6px)}
+.reveal{position:absolute;inset:0;border-radius:18px;background:rgba(247,248,252,.55);backdrop-filter:blur(2px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;color:var(--primary)}
+.reveal.hide{display:none}
+.wtools{display:flex;justify-content:center;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--soft);border:0;border-radius:20px;padding:9px 16px;
+  font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit}
+.warn{display:flex;gap:9px;background:#FFF6E9;border-radius:14px;padding:12px 14px;margin-top:16px;font-size:12.5px;color:#8A6300;line-height:1.5}
+.slots{display:flex;gap:8px;margin-top:20px}
+.slot{flex:1;height:50px;border:1.5px dashed #CFD5E4;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:600;color:var(--mute);background:var(--card)}
+.slot.done{border-style:solid;border-color:var(--primary);color:var(--ink);background:#FBFAFF}
+.slot.now{border-color:var(--primary);background:#FBFAFF;color:var(--primary)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.opts button{height:50px;border:1.5px solid var(--line);background:var(--card);border-radius:14px;font-size:15px;
+  font-weight:600;font-family:inherit;color:var(--ink);cursor:pointer}
+.opts button:hover{border-color:var(--primary)}
+.opts button.bad{border-color:var(--red);color:var(--red);background:#FFF8F9}
+.rules{margin-top:16px}
+.rules div{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);padding:4px 0}
+.rules div.ok{color:var(--green)}
+.rules i{font-style:normal;width:16px;text-align:center;font-size:12px}
+.steps{margin-top:34px}
+.steps div{display:flex;align-items:center;gap:12px;padding:13px 0;font-size:15px;color:var(--mute)}
+.steps div.on{color:var(--ink);font-weight:600}
+.steps div.ok{color:var(--ink)}
+.steps .dot{width:22px;height:22px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--mute)}
+.steps div.ok .dot{background:var(--green);color:#fff}
+.steps div.on .dot{background:var(--primary);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.tabs{display:flex;background:var(--soft);border-radius:14px;padding:4px;margin-top:20px}
+.tabs button{flex:1;height:38px;border:0;background:none;border-radius:11px;font-size:14px;font-weight:600;
+  color:var(--sub);cursor:pointer;font-family:inherit}
+.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(11,20,55,.08)}
+.rowbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+/* home */
+.card{background:var(--card);border-radius:24px;padding:18px;margin-top:8px}
+.wrow{display:flex;align-items:center;gap:10px}
+.wpill{display:flex;align-items:center;gap:6px;background:var(--soft);border:0;border-radius:18px;padding:10px 14px;
+  font-size:14px;font-weight:700;font-family:inherit;color:var(--ink);cursor:pointer;transition:.14s;max-width:62%}
+.wpill:hover{background:#E4E7F0}
+.wpill:active{transform:scale(.97);background:#DDE1EC}
+.wpill span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wpill .cv{font-size:12px;color:var(--sub);transition:.18s;flex:0 0 auto}
+.wpill.open .cv{transform:rotate(180deg)}
+.badge{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:12px;background:var(--red-bg);color:var(--red);cursor:pointer}
+.badge.ok{background:#E4F8EF;color:#0E9C63}
+.scan{margin-left:auto;font-size:19px;cursor:pointer}
+.bal{font-size:38px;font-weight:800;margin:16px 0 2px;letter-spacing:-1px}
+.chg{font-size:14px;color:var(--sub)}
+.chg b{color:var(--green);font-weight:600}
+.acts{display:flex;gap:12px;margin-top:18px}
+.acts div{flex:1;background:var(--soft);border-radius:16px;height:60px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:16px;font-weight:700;cursor:pointer}
+.acts .ic{width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+.sect{display:flex;align-items:center;margin:22px 2px 8px}
+.sect b{font-size:16px;font-weight:800}
+.sect span{margin-left:auto;font-size:17px;color:var(--sub);cursor:pointer}
+.asset{display:flex;align-items:center;gap:12px;padding:12px 2px}
+.asset .lg{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff}
+.asset .nm{font-size:16px;font-weight:700}
+.asset .px{font-size:13px;color:var(--sub);margin-top:3px}
+.asset .px em{font-style:normal}
+.asset .rt{margin-left:auto;text-align:right}
+.asset .rt .q{font-size:13px;color:var(--sub)}
+.asset .rt .v{font-size:16px;font-weight:700;margin-top:3px}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding-bottom:60px}
+.empty p{font-size:15px;color:var(--sub);text-align:center;line-height:1.5;margin:0}
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:84px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);display:none;align-items:flex-start;padding-top:12px;z-index:30}
+.tabbar.show{display:flex}
+.tabbar div{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;color:var(--mute);cursor:pointer;font-weight:600}
+.tabbar div.on{color:var(--primary)}
+.tabbar .g{font-size:19px}
+.list{background:var(--card);border-radius:20px;margin-top:16px;overflow:hidden}
+.li{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--line);cursor:pointer;font-size:15px;font-weight:600}
+.li:last-child{border-bottom:0}
+.li .ar{margin-left:auto;color:var(--mute);font-size:15px;font-weight:400}
+.li .desc{font-size:12px;color:var(--sub);font-weight:400;margin-top:3px}
+.li .col{display:flex;flex-direction:column}
+.sw{width:46px;height:27px;border-radius:14px;background:#D6DAE6;margin-left:auto;position:relative;transition:.18s;flex:0 0 46px}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on{background:var(--green)}
+.sw.on::after{transform:translateX(19px)}
+.prof{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:20px}
+.av{width:72px;height:72px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800}
+.prof b{font-size:18px}
+.prof span{font-size:13px;color:var(--sub)}
+.addr{background:var(--soft);border-radius:14px;padding:14px;margin-top:20px;font-size:14px;
+  font-family:ui-monospace,Menlo,monospace;text-align:center;word-break:break-all;line-height:1.6}
+/* overlays */
+.mask{position:absolute;inset:0;background:rgba(11,20,55,.42);display:none;z-index:50;align-items:flex-end}
+.mask.show{display:flex;animation:fade .18s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{width:100%;background:#fff;border-radius:26px 26px 0 0;padding:24px 24px 30px;animation:up .24s cubic-bezier(.2,.8,.3,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.sheet h3{margin:0;font-size:20px;font-weight:800}
+.sheet p{margin:10px 0 0;font-size:14px;color:var(--sub);line-height:1.6}
+.sheet.tall{height:76%;display:flex;flex-direction:column;padding:18px 20px 26px}
+.shead{display:flex;align-items:center;position:relative;height:40px;flex:0 0 40px}
+.shead .back{position:absolute;left:-6px}
+.shead b{flex:1;text-align:center;font-size:19px;font-weight:800}
+.total{display:flex;align-items:center;margin:22px 6px 12px;font-size:15px;color:var(--sub)}
+.total b{margin-left:auto;font-size:20px;font-weight:800;color:var(--ink)}
+.wlist{flex:1;overflow-y:auto;margin:0 -4px;padding:4px}
+.wlist::-webkit-scrollbar{width:0}
+.witem{display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid transparent;
+  border-radius:20px;padding:14px;margin-bottom:14px;cursor:pointer;transition:.15s;box-shadow:0 1px 2px rgba(11,20,55,.04)}
+.witem:hover{border-color:#D8D5F0}
+.witem.on{background:#EDEBFA;border-color:var(--primary)}
+.witem .ic{width:44px;height:44px;flex:0 0 44px;border-radius:50%;background:var(--primary-l);color:var(--primary);
+  display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800}
+.witem.on .ic{background:#fff}
+.witem .info{min-width:0;flex:1}
+.witem .nm{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700}
+.witem.on .nm{color:var(--primary)}
+.witem .bal{font-size:14px;color:var(--sub);margin-top:4px}
+.witem.on .bal{color:var(--primary)}
+.wtag{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:9px;background:var(--soft);color:var(--sub);white-space:nowrap}
+.witem.on .wtag{background:#fff}
+.wtag.nb{background:var(--red-bg);color:var(--red)}
+.witem.on .wtag.nb{background:var(--red-bg);color:var(--red)}
+.mgbtn{flex:0 0 auto;border:0;background:var(--soft);border-radius:19px;padding:10px 16px;font-size:14px;
+  font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit}
+.witem.on .mgbtn{background:#fff}
+.wfoot{display:flex;gap:12px;padding-top:14px}
+.wfoot .btn{flex:1}
+.toast{position:absolute;left:24px;right:24px;bottom:110px;background:rgba(11,20,55,.94);color:#fff;padding:13px 16px;
+  border-radius:14px;font-size:13.5px;line-height:1.5;z-index:60;opacity:0;transform:translateY(8px);transition:.22s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.dot3{width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block}
+.dots{display:flex;gap:18px;justify-content:center;margin-top:38px}
+.dots i{width:14px;height:14px;border-radius:50%;background:#D4D9E6;transition:.15s}
+.dots i.on{background:var(--primary);transform:scale(1.08)}
+.dots.bad i{background:var(--red)}
+.dots.shake{animation:shk .42s}
+@keyframes shk{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:auto;padding-top:24px}
+.keys button{height:60px;border:0;background:var(--card);border-radius:18px;font-size:23px;font-weight:600;color:var(--ink);
+  cursor:pointer;font-family:inherit;box-shadow:0 1px 2px rgba(11,20,55,.05)}
+.keys button:active{background:var(--soft)}
+.keys button.blank{background:none;box-shadow:none;cursor:default}
+.keys button.fn{background:none;box-shadow:none;font-size:19px;color:var(--sub)}
+.sysdlg{width:272px;margin:auto;background:rgba(250,250,252,.97);border-radius:16px;overflow:hidden;text-align:center;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.sysdlg h4{margin:0;padding:20px 20px 6px;font-size:16px;font-weight:600}
+.sysdlg p{margin:0;padding:0 20px 18px;font-size:13px;color:#3C3C43;line-height:1.45}
+.sysbtns{display:flex;border-top:.5px solid #C6C6C8}
+.sysbtns button{flex:1;padding:12px;background:none;border:0;font-size:17px;color:#007AFF;cursor:pointer;font-family:inherit}
+.sysbtns button:first-child{border-right:.5px solid #C6C6C8}
+.sysbtns button.pri{font-weight:600}
+.spin{width:54px;height:54px;border-radius:50%;border:5px solid #DEDBF4;border-top-color:var(--primary);animation:sp .85s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+svg{display:block}
+@media(max-width:760px){body{flex-direction:column;align-items:center;padding:16px}.panel{width:375px;flex:none}}
+</style>
+</head>
+<body>
+
+<aside class="panel">
+  <h1>钱包 Onboarding · 交互 Demo</h1>
+  <div class="meta">登录 → 创建（本地／云端加密备份）→ 助记词备份验证 → 导入 → 换设备恢复 → 首页／账户<br>2026-07-22</div>
+
+  <div class="langsw">
+    <button id="lz" class="on" onclick="setLang('zh')">中文</button>
+    <button id="le" onclick="setLang('en')">English</button>
+  </div>
+
+  <h2>场景入口</h2>
+  <button class="sc" onclick="scen('local')"><b>A · 新用户，本地创建</b><span>自托管，助记词只在本机，含备份验证</span></button>
+  <button class="sc" onclick="scen('cloud')"><b>B · 新用户，云端加密备份</b><span>设置 8–20 位密码，服务端加密存储</span></button>
+  <button class="sc" onclick="scen('restore')"><b>C · 换设备，社交登录恢复</b><span>检测到云备份 → 输密码解密（含错误锁定）</span></button>
+  <button class="sc" onclick="scen('import')"><b>D · 助记词／私钥导入</b><span>含词数、词库、私钥格式校验失败</span></button>
+  <button class="sc" onclick="scen('homefund')"><b>E · 直达首页（有资产）</b><span>跳过 onboarding</span></button>
+
+  <h2>开关</h2>
+  <button class="sc" id="failSw" onclick="toggleFail()"><b>模拟社交登录失败 · 关</b><span>打开后点 Google／Apple 会进入失败页</span></button>
+  <button class="sc" id="bioSw" onclick="toggleBio()"><b>设备支持 Face ID · 是</b><span>关掉后最后一步直接降级到 6 位密码</span></button>
+
+  <h2>路径日志</h2>
+  <div id="log"></div>
+</aside>
+
+<div class="phone">
+  <div class="statusbar"><span>10:00</span><span class="icons">▮▮▮ ▰</span></div>
+
+  <!-- ============ 1. 社交登录 ============ -->
+  <section class="screen active" id="login">
+    <div class="hero" style="margin-top:70px">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="72" fill="#E7E4F7"/>
+        <rect x="88" y="42" width="72" height="118" rx="14" fill="#fff" stroke="#0B1437" stroke-width="5" transform="rotate(9 124 101)"/>
+        <rect x="112" y="52" width="26" height="5" rx="2.5" fill="#0B1437" transform="rotate(9 125 54)"/>
+        <path d="M104 92l10-10M108 106l14-14" stroke="#5A51C6" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="76" cy="112" r="40" fill="#5A51C6"/>
+        <circle cx="76" cy="103" r="18" fill="#fff"/><circle cx="76" cy="99" r="7" fill="#5A51C6"/>
+        <path d="M64 126a13 13 0 0126 0z" fill="#5A51C6"/>
+        <circle cx="60" cy="60" r="19" fill="#0B1437"/><text x="60" y="68" font-size="21" fill="#fff" text-anchor="middle">&#63743;</text>
+        <circle cx="146" cy="76" r="23" fill="#0B1437"/><text x="146" y="86" font-size="26" fill="#fff" text-anchor="middle" font-weight="700">G</text>
+      </svg>
+    </div>
+    <h2 class="t c" data-t="login.t">社交登录</h2>
+    <p class="s c" data-t="login.s">支持多种社交账号登录</p>
+    <div class="spacer"></div>
+    <button class="btn" onclick="auth('google')"><b style="font-size:19px">G</b><span data-t="login.google">使用 Google 登录</span></button>
+    <button class="btn" onclick="auth('apple')"><b style="font-size:19px">&#63743;</b><span data-t="login.apple">使用 Apple 登录</span></button>
+    <button class="btn ghost" onclick="auth('email')"><span data-t="login.email">使用邮箱继续</span></button>
+    <div class="agree" onclick="toggleAgree()">
+      <div class="cb on" id="agreeCb"></div>
+      <div><span data-t="login.agree">我已阅读并同意</span> <a href="#" onclick="event.preventDefault()" data-t="login.tos">用户协议</a> &amp; <a href="#" onclick="event.preventDefault()" data-t="login.pp">隐私政策</a></div>
+    </div>
+  </section>
+
+  <!-- ============ 1b. 登录中 ============ -->
+  <section class="screen" id="authing">
+    <div style="margin-top:230px"></div>
+    <div class="hero"><div class="spin"></div></div>
+    <h2 class="t c" id="authingT" data-t="au.t">正在通过 Google 验证</h2>
+    <p class="s c" data-t="au.s">在弹出的页面完成授权，不要关闭 App</p>
+    <div class="spacer"></div>
+    <button class="btn text" onclick="cancelAuth()" data-t="c.cancel">取消</button>
+  </section>
+
+  <!-- ============ 1c. 登录失败 ============ -->
+  <section class="screen" id="authfail">
+    <div style="margin-top:170px"></div>
+    <div class="hero">
+      <svg width="88" height="88" viewBox="0 0 88 88"><circle cx="44" cy="44" r="40" fill="#FFE7EA"/><circle cx="44" cy="44" r="29" fill="#F04A5E"/>
+      <path d="M35 35l18 18M53 35L35 53" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/></svg>
+    </div>
+    <h2 class="t c" id="afT" data-t="af.t">Google 登录失败</h2>
+    <p class="s c" data-t="af.s">授权被取消或网络中断。没有创建任何钱包，也没有产生任何链上操作。</p>
+    <div class="hint" style="text-align:center" data-t="af.code">错误码 auth_cancelled</div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="retryAuth()" data-t="af.retry">重试</button>
+    <button class="btn ghost" onclick="reset('login')" data-t="af.back">换其他方式登录</button>
+  </section>
+
+  <!-- ============ 2. 邮箱 ============ -->
+  <section class="screen" id="email">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="email.t">邮箱登录</h2>
+    <p class="s" data-t="email.s">我们会发送 6 位验证码到你的邮箱</p>
+    <input class="field" id="emailIn" type="email" placeholder="you@example.com" oninput="clearErr('emailErr','emailIn')">
+    <div class="err-msg" id="emailErr" data-t="email.err">邮箱格式不正确</div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="sendCode()" data-t="email.send">发送验证码</button>
+  </section>
+
+  <!-- ============ 3. 验证码 ============ -->
+  <section class="screen" id="otp">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="otp.t">输入验证码</h2>
+    <p class="s"><span data-t="otp.s">验证码已发送至</span> <b id="otpMail">you@example.com</b></p>
+    <div class="otp" id="otpBox" onclick="focusOtp()">
+      <input id="otpHidden" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+      <b></b><b></b><b></b><b></b><b></b><b></b>
+    </div>
+    <div class="err-msg" id="otpErr" data-t="otp.err">验证码错误，请重试</div>
+    <div class="hint" data-t="otp.hint">Demo：输入 111111 查看错误态，其他任意 6 位数字通过</div>
+    <div class="spacer"></div>
+    <button class="btn text" data-t="otp.resend">重新发送（59s）</button>
+  </section>
+
+  <!-- ============ 4. 创建或导入 ============ -->
+  <section class="screen" id="setup">
+    <div class="nav"><div class="right" onclick="logoutNow()">⏻ <span data-t="c.logout">退出登录</span></div></div>
+    <div class="hero" style="margin-top:110px">
+      <svg width="150" height="120" viewBox="0 0 150 120">
+        <path d="M28 26l60-14a8 8 0 019 6l3 12H28z" fill="#8B84DC"/>
+        <rect x="22" y="24" width="106" height="72" rx="12" fill="#5A51C6"/>
+        <rect x="36" y="54" width="26" height="10" rx="5" fill="#fff"/>
+        <circle cx="112" cy="82" r="22" fill="#fff"/><circle cx="112" cy="82" r="19" fill="#5A51C6"/>
+        <text x="112" y="91" font-size="22" fill="#fff" text-anchor="middle" font-weight="800">$</text>
+      </svg>
+    </div>
+    <h2 class="t c" data-t="setup.t">创建或导入钱包，<br>立即开始使用</h2>
+    <div class="spacer"></div>
+    <button class="btn" onclick="go('createMode')" data-t="setup.create">创建钱包</button>
+    <button class="btn" onclick="go('importPick')" data-t="setup.import">导入钱包</button>
+  </section>
+
+  <!-- ============ 5. 选择备份方式 ============ -->
+  <section class="screen" id="createMode">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="cm.t">选择备份方式</h2>
+    <p class="s" data-t="cm.s">这决定你在新设备上怎么找回钱包</p>
+    <div class="opt" id="optLocal" onclick="pickMode('local')">
+      <div class="oh"><b data-t="cm.l1">本地创建 · 自己保管</b><span class="tag grey" data-t="cm.l2">进阶用户</span></div>
+      <p data-t="cm.l3">助记词只存在这台设备。安全性最高，但设备丢失或误删 App 后，没有人能帮你找回。</p>
+    </div>
+    <div class="opt" id="optCloud" onclick="pickMode('cloud')">
+      <div class="oh"><b data-t="cm.c1">云端加密备份</b><span class="tag" data-t="cm.c2">推荐</span></div>
+      <p data-t="cm.c3">用你设置的密码加密后存到服务器。换设备时，用同一个社交账号登录 + 密码即可恢复。</p>
+    </div>
+    <div class="hint" data-t="cm.note">两种方式都可以之后在「账户 → 安全与备份」里切换。</div>
+    <div class="spacer"></div>
+    <button class="btn" id="cmNext" disabled onclick="modeNext()" data-t="c.next">下一步</button>
+  </section>
+
+  <!-- ============ 6. 备份风险告知 ============ -->
+  <section class="screen" id="warn">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="w.t">先看懂这三件事</h2>
+    <p class="s" data-t="w.s">助记词就是你的钱包本身，不是密码。</p>
+    <div class="risk">
+      <div class="row"><div class="ic">!</div><div data-t="w.1">任何人拿到助记词，都能转走你的全部资产。</div></div>
+      <div class="row"><div class="ic">!</div><div data-t="w.2">我们和任何客服都不会向你索要助记词。</div></div>
+      <div class="row"><div class="ic">!</div><div data-t="w.3">助记词丢失，资产永久无法找回，也无法重置。</div></div>
+    </div>
+    <div class="agree" onclick="toggleWarn()"><div class="cb sq" id="warnCb"></div><div data-t="w.ck">我已理解，并会离线抄写保存</div></div>
+    <div class="spacer"></div>
+    <button class="btn" id="warnNext" disabled onclick="genMnemonic()" data-t="c.next">下一步</button>
+  </section>
+
+  <!-- ============ 7. 助记词 ============ -->
+  <section class="screen" id="mnemonic">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="m.t">你的助记词</h2>
+    <p class="s" data-t="m.s">按顺序抄写这 12 个单词并离线保存。</p>
+    <div class="words blur" id="words">
+      <div class="reveal" id="reveal" onclick="revealWords()">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span data-t="m.reveal">点击显示</span>
+      </div>
+    </div>
+    <div class="wtools"><button class="chip" id="copyBtn" onclick="copyWords()"><span data-t="m.copy">复制</span></button></div>
+    <div class="warn"><span>⚠︎</span><span data-t="m.warn">截图会同步到云相册，木马可以读取。请手写在纸上。</span></div>
+    <div class="spacer"></div>
+    <button class="btn" id="mnNext" disabled onclick="startVerify()" data-t="m.done">我已抄写</button>
+  </section>
+
+  <!-- ============ 8. 验证助记词 ============ -->
+  <section class="screen" id="verify">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="v.t">验证助记词</h2>
+    <p class="s"><span data-t="v.s">请选出第</span> <b id="vIdx">3</b> <span data-t="v.s2">个单词</span></p>
+    <div class="slots" id="vSlots"></div>
+    <div class="opts" id="vOpts"></div>
+    <div class="err-msg" id="vErr" data-t="v.err">选错了，请对照你抄写的记录重新选择。</div>
+    <div class="spacer"></div>
+    <button class="btn text" onclick="go('mnemonic')" data-t="v.re">重新查看助记词</button>
+  </section>
+
+  <!-- ============ 9. 设置备份密码 ============ -->
+  <section class="screen" id="pwd">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="p.t">设置备份密码</h2>
+    <p class="s" data-t="p.s">这个密码用于加密你的助记词备份。密码不可重置，忘记后只能用助记词重新导入钱包。</p>
+    <input class="field" id="p1" type="password" placeholder="8-20 位，包含字母和数字" oninput="checkPwd()">
+    <input class="field" id="p2" type="password" placeholder="再次输入密码" oninput="checkPwd()">
+    <div class="rules">
+      <div id="r1"><i>○</i><span data-t="p.r1">长度 8–20 位</span></div>
+      <div id="r2"><i>○</i><span data-t="p.r2">同时包含字母和数字</span></div>
+      <div id="r3"><i>○</i><span data-t="p.r3">两次输入一致</span></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="pwdNext" disabled onclick="encrypt()" data-t="p.go">加密并备份</button>
+  </section>
+
+  <!-- ============ 10. 加密中 ============ -->
+  <section class="screen" id="enc">
+    <div style="margin-top:130px"></div>
+    <h2 class="t c" data-t="e.t">正在备份</h2>
+    <p class="s c" data-t="e.s">请勿关闭 App</p>
+    <div class="steps" id="encSteps">
+      <div id="e1"><span class="dot">1</span><span data-t="e.1">校验密码强度</span></div>
+      <div id="e2"><span class="dot">2</span><span data-t="e.2">通过加密通道上传</span></div>
+      <div id="e3"><span class="dot">3</span><span data-t="e.3">服务端用你的密码加密存储</span></div>
+      <div id="e4"><span class="dot">4</span><span data-t="e.4">备份完成</span></div>
+    </div>
+    <div class="spacer"></div>
+  </section>
+
+  <!-- ============ 10b. 选择导入方式 ============ -->
+  <section class="screen" id="importPick">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="i.t">导入钱包</h2>
+    <p class="s" data-t="ip.s">选择一种方式找回你的钱包</p>
+    <div class="opt" id="optSelf" onclick="pickImp('self')">
+      <div class="oh"><b data-t="ip.s1">助记词或私钥</b></div>
+      <p data-t="ip.s2">用你自己保存的 12／18／24 个单词，或私钥导入。</p>
+    </div>
+    <div class="opt" id="optSocial" onclick="pickImp('social')">
+      <div class="oh"><b data-t="ip.c1">社交账号恢复</b><span class="tag" id="impTag" data-t="ip.tagOk">有备份</span></div>
+      <p data-t="ip.c2">从云端拉取你的加密备份，需要输入当时设置的备份密码。</p>
+      <div class="hint" id="impAcc" style="margin-top:10px">当前登录账号：ares@gmail.com</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="ipNext" disabled onclick="impNext()" data-t="c.next">下一步</button>
+  </section>
+
+  <!-- ============ 11. 导入 ============ -->
+  <section class="screen" id="import">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t c" data-t="i.t">导入钱包</h2>
+    <p class="s c" data-t="i.s">输入 12、18 或 24 位助记词，或私钥</p>
+    <div class="tabs">
+      <button class="on" id="tabM" onclick="impTab('m')" data-t="i.tabm">助记词</button>
+      <button id="tabK" onclick="impTab('k')" data-t="i.tabk">私钥</button>
+    </div>
+    <textarea class="field" id="impIn" placeholder="用空格分隔输入助记词" oninput="clearErr('impErr','impIn')"></textarea>
+    <div class="err-msg" id="impErr"></div>
+    <div class="rowbtns">
+      <button class="chip" onclick="fillDemo()"><span data-t="i.fill">填入示例</span></button>
+      <button class="chip" onclick="pasteDemo()"><span data-t="i.paste">粘贴</span> 📄</button>
+    </div>
+    <div class="hint" data-t="i.hint">Demo：随便输入几个词可看词数／词库校验失败；私钥页输入 0x123 可看格式错误。</div>
+    <div class="spacer"></div>
+    <button class="btn" id="impBtn" onclick="doImport()" data-t="i.go">导入</button>
+  </section>
+
+  <!-- ============ 12. 发现云备份 ============ -->
+  <section class="screen" id="found">
+    <div class="nav"><div class="right" onclick="logoutNow()">⏻ <span data-t="c.logout">退出登录</span></div></div>
+    <div class="hero" style="margin-top:80px">
+      <svg width="150" height="120" viewBox="0 0 150 120">
+        <rect x="22" y="24" width="106" height="72" rx="12" fill="#5A51C6"/>
+        <rect x="36" y="54" width="26" height="10" rx="5" fill="#fff"/>
+        <circle cx="112" cy="82" r="22" fill="#fff"/>
+        <path d="M105 82v-5a7 7 0 0114 0v5" stroke="#5A51C6" stroke-width="4" fill="none"/>
+        <rect x="101" y="81" width="22" height="16" rx="4" fill="#5A51C6"/>
+      </svg>
+    </div>
+    <h2 class="t c" data-t="f.t">找到一个加密备份</h2>
+    <p class="s c" data-t="f.s">这个账号在下面的时间备份过一个钱包，输入备份密码即可恢复。</p>
+    <div class="addr">0x7a3F…9C21<br><span style="font-size:12px;color:#6E7891" data-t="f.date">备份于 2026-05-18 14:22</span></div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="go('rpwd')" data-t="f.go">用密码恢复</button>
+    <button class="btn ghost" onclick="impTab('m');go('import')" data-t="f.alt">改用助记词导入</button>
+  </section>
+
+  <!-- ============ 13. 输入备份密码 ============ -->
+  <section class="screen" id="rpwd">
+    <div class="nav"><div class="back" onclick="back()">‹</div></div>
+    <h2 class="t" data-t="r.t">输入备份密码</h2>
+    <p class="s" data-t="r.s">用来解密云端备份的那个密码。</p>
+    <input class="field" id="rp" type="password" placeholder="备份密码" oninput="clearErr('rErr','rp')">
+    <div class="err-msg" id="rErr"></div>
+    <div class="hint" data-t="r.hint">Demo 正确密码：demo1234，输错 5 次触发锁定。</div>
+    <button class="btn text" onclick="openSheet('sheetForgot')" data-t="r.forgot">忘记密码？</button>
+    <div class="spacer"></div>
+    <button class="btn" id="rBtn" onclick="doRestore()" data-t="r.go">恢复钱包</button>
+  </section>
+
+  <!-- ============ 13b. 开启 Face ID ============ -->
+  <section class="screen" id="bio">
+    <div style="margin-top:120px"></div>
+    <div class="hero">
+      <svg width="104" height="104" viewBox="0 0 104 104">
+        <rect x="6" y="6" width="92" height="92" rx="24" fill="#EDEBFA"/>
+        <path d="M28 40v-6a6 6 0 016-6h6M76 40v-6a6 6 0 00-6-6h-6M28 64v6a6 6 0 006 6h6M76 64v6a6 6 0 01-6 6h-6"
+          stroke="#5A51C6" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <circle cx="42" cy="46" r="3.4" fill="#5A51C6"/><circle cx="62" cy="46" r="3.4" fill="#5A51C6"/>
+        <path d="M52 44v12h-4M41 64c4 4 17 4 22 0" stroke="#5A51C6" stroke-width="4.4" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    <h2 class="t c" data-t="bio.t">开启 Face ID</h2>
+    <p class="s c" data-t="bio.s">之后用 Face ID 解锁钱包、确认转账。识别只在这台设备上完成，不会上传。</p>
+    <div class="hint" style="text-align:center" data-t="bio.note">之后可以在「安全与备份」里改。</div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="askBio()" data-t="bio.go">开启 Face ID</button>
+    <button class="btn ghost" onclick="toPin(false)" data-t="bio.alt">用 6 位密码代替</button>
+  </section>
+
+  <!-- ============ 13c. 设置 6 位密码 ============ -->
+  <section class="screen" id="pin" style="padding-bottom:26px">
+    <div class="nav"><div class="back" onclick="pinBack()">‹</div></div>
+    <h2 class="t c" id="pinT" data-t="pin.t1">设置 6 位密码</h2>
+    <p class="s c" id="pinS" data-t="pin.s1">用于解锁钱包和确认转账。忘记后只能重新导入钱包。</p>
+    <div class="dots" id="pinDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="err-msg" id="pinErr" style="text-align:center"></div>
+    <div class="keys" id="keys"></div>
+  </section>
+
+  <!-- ============ 14. 成功 ============ -->
+  <section class="screen" id="done">
+    <div style="margin-top:150px"></div>
+    <div class="hero">
+      <svg width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="44" fill="#E4F8EF"/><circle cx="48" cy="48" r="32" fill="#16C784"/>
+      <path d="M35 49l9 9 18-18" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h2 class="t c" data-t="d.t">钱包已就绪</h2>
+    <p class="s c" id="doneSub" data-t="d.s">助记词只保存在这台设备上，记得妥善保管。</p>
+    <div class="chip" id="doneLock" style="margin:14px auto 0">已开启 Face ID 解锁</div>
+    <div class="addr" id="doneAddr">0x7a3F4b19dE82c05A7f31b6C9e4a1D8F0b2C39C21</div>
+    <div class="spacer"></div>
+    <button class="btn" onclick="enterHome()" data-t="d.go">开始使用</button>
+    <button class="btn text" id="doneBk" style="display:none" onclick="enterHome();startBackup('phrase')" data-t="d.backup">现在就备份助记词</button>
+  </section>
+
+  <!-- ============ 15. 首页 ============ -->
+  <section class="screen" id="home" style="padding-bottom:100px">
+    <div class="card">
+      <div class="wrow">
+        <button type="button" class="wpill" id="wPill" onclick="openWallets()"><span id="wName" data-t="h.my">My Wallet</span><span class="cv">⌄</span></button>
+        <div class="badge" id="hBadge" onclick="openSheet('sheetBackup')" data-t="h.nb">未备份</div>
+        <div class="scan">⛶</div>
+      </div>
+      <div class="bal" id="hBal">$ 00.00</div>
+      <div class="chg" id="hChg" style="display:none"><b>+1.24%</b> <span data-t="h.today">今日</span></div>
+      <div class="acts">
+        <div onclick="toast(t('h.soon'))"><span class="ic">↗</span><span data-t="h.send">转账</span></div>
+        <div onclick="toast(t('h.soon'))"><span class="ic">↙</span><span data-t="h.recv">收款</span></div>
+      </div>
+    </div>
+    <div class="sect"><b data-t="h.asset">资产</b><span>◷</span></div>
+    <div id="assetList"></div>
+    <div class="empty" id="hEmpty">
+      <svg width="120" height="100" viewBox="0 0 120 100">
+        <rect x="26" y="22" width="68" height="60" rx="10" fill="#C7C3EE"/>
+        <rect x="26" y="42" width="68" height="40" rx="10" fill="#5A51C6"/>
+        <path d="M26 42l34 22 34-22" fill="#8B84DC"/>
+        <rect x="38" y="32" width="14" height="12" rx="3" fill="#fff"/>
+      </svg>
+      <p data-t="h.empty">给钱包充值，开启链上生活</p>
+      <button class="btn" style="width:auto;padding:0 30px" onclick="toast(t('h.soon'))"><span data-t="h.add">添加资产</span> →</button>
+    </div>
+  </section>
+
+  <!-- ============ 16. Swap ============ -->
+  <section class="screen" id="swap">
+    <h2 class="t" style="margin-top:20px" data-t="s.t">兑换</h2>
+    <div class="empty"><p data-t="s.soon">Swap 不在本次 Demo 范围内</p></div>
+  </section>
+
+  <!-- ============ 17. 账户 ============ -->
+  <section class="screen" id="account" style="padding-bottom:100px">
+    <h2 class="t" style="margin-top:16px" data-t="a.t">账户</h2>
+    <div class="prof">
+      <div class="av">A</div>
+      <b id="accMail">ares@gmail.com</b>
+      <span id="accVia" data-t="a.via">通过 Google 登录</span>
+    </div>
+    <div class="list">
+      <div class="li" onclick="go('security')"><div class="col"><span data-t="a.sec">安全与备份</span><span class="desc" id="secDesc" data-t="a.nb">尚未备份</span></div><span class="ar">›</span></div>
+      <div class="li" onclick="toast(t('h.soon'))"><span data-t="a.addr">地址簿</span><span class="ar">›</span></div>
+      <div class="li" onclick="toast(t('h.soon'))"><span data-t="a.cur">货币与语言</span><span class="ar">›</span></div>
+      <div class="li" onclick="toast(t('h.soon'))"><span data-t="a.help">帮助中心</span><span class="ar">›</span></div>
+      <div class="li" style="color:var(--red)" onclick="tryLogout()"><span data-t="c.logout">退出登录</span><span class="ar">›</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 18. 安全与备份 ============ -->
+  <section class="screen" id="security" style="padding-bottom:100px">
+    <div class="nav"><div class="back" onclick="go('account')">‹</div></div>
+    <h2 class="t" data-t="sec.t">安全与备份</h2>
+    <div class="list">
+      <div class="li" onclick="toggleCloud()">
+        <div class="col"><span data-t="sec.cloud">云端加密备份</span><span class="desc" id="cloudDesc" data-t="sec.cloudOff">关闭后，换设备只能用助记词恢复</span></div>
+        <div class="sw" id="cloudSw"></div>
+      </div>
+      <div class="li" onclick="changeLock()">
+        <div class="col"><span data-t="sec.lock">解锁方式</span><span class="desc" id="lockDesc">Face ID</span></div><span class="ar">›</span>
+      </div>
+      <div class="li" id="chgPwdRow" onclick="toast(t('h.soon'))"><span data-t="sec.pwd">修改备份密码</span><span class="ar">›</span></div>
+      <div class="li" onclick="viewPhrase()"><span data-t="sec.view">查看助记词</span><span class="ar">›</span></div>
+      <div class="li" onclick="toast(t('h.soon'))"><span data-t="sec.dev">设备管理</span><span class="ar">›</span></div>
+    </div>
+    <div class="hint" data-t="sec.note">备份密码不可重置。我们只保存密文，忘记密码后需用助记词重新导入。</div>
+  </section>
+
+  <!-- ============ tabbar ============ -->
+  <div class="tabbar" id="tabbar">
+    <div id="tbW" onclick="tab('home')"><span class="g">▬</span><span data-t="n.wallet">钱包</span></div>
+    <div id="tbS" onclick="tab('swap')"><span class="g">⇅</span><span data-t="n.swap">兑换</span></div>
+    <div id="tbA" onclick="tab('account')"><span class="g">☺</span><span data-t="n.acct">账户</span></div>
+  </div>
+
+  <!-- ============ sheets ============ -->
+  <div class="mask" id="sheetForgot" onclick="closeSheet(event)">
+    <div class="sheet">
+      <h3 data-t="sf.t">备份密码无法重置</h3>
+      <p data-t="sf.b">服务端只保存加密后的备份，没有你的密码就解不开，我们也没有副本。请改用助记词或私钥导入钱包，导入后可以重新设置备份密码。</p>
+      <button class="btn" onclick="closeSheetGo('import')" data-t="sf.go">去导入助记词</button>
+      <button class="btn ghost" onclick="closeSheet()" data-t="c.cancel">再试一次</button>
+    </div>
+  </div>
+
+  <div class="mask" id="sheetBackup" onclick="closeSheet(event)">
+    <div class="sheet">
+      <h3 data-t="sb.t">这个钱包还没有备份</h3>
+      <p data-t="sb.b">助记词只存在这台设备上。设备丢失、系统重置或误删 App 后，资产将无法找回。</p>
+      <button class="btn" onclick="startBackup('phrase')" data-t="sb.go1">查看并备份助记词</button>
+      <button class="btn ghost" onclick="startBackup('cloud')" data-t="sb.go2">开启云端加密备份</button>
+      <button class="btn text" onclick="closeSheet()" data-t="sb.go3">以后再说</button>
+    </div>
+  </div>
+
+  <div class="mask" id="sheetLogout" onclick="closeSheet(event)">
+    <div class="sheet">
+      <h3 data-t="sl.t">确认退出登录？</h3>
+      <p id="slBody" data-t="sl.b1">这个钱包只存在这台设备上，且尚未备份。退出后助记词会被清除，资产无法找回。</p>
+      <button class="btn" id="slPrimary" onclick="closeSheetGo('warn')" data-t="sl.go1">先去备份</button>
+      <button class="btn ghost" style="color:var(--red)" onclick="logoutNow()" data-t="sl.go2">仍要退出</button>
+    </div>
+  </div>
+
+  <div class="mask" id="sheetPhrase" onclick="closeSheet(event)">
+    <div class="sheet">
+      <h3 data-t="sp.t">确认是你本人？</h3>
+      <p data-t="sp.b">查看助记词需要通过设备锁验证。请确认周围没有摄像头和他人。</p>
+      <button class="btn" onclick="closeSheet();genMnemonic()" data-t="sp.go">验证并查看</button>
+      <button class="btn ghost" onclick="closeSheet()" data-t="c.cancel">取消</button>
+    </div>
+  </div>
+
+  <!-- ============ 切换钱包 ============ -->
+  <div class="mask" id="sheetWallets" onclick="closeSheet(event)">
+    <div class="sheet tall">
+      <div class="shead">
+        <div class="back" onclick="closeSheet()">‹</div>
+        <b data-t="ws.t">选择钱包</b>
+      </div>
+      <div class="total"><span data-t="ws.total">总资产</span><b id="wsTotal">$0.00</b></div>
+      <div class="wlist" id="wList"></div>
+      <div class="wfoot">
+        <button class="btn ghost sm" style="margin:0" onclick="closeSheet();go('importPick')" data-t="ws.imp">导入</button>
+        <button class="btn sm" style="margin:0" onclick="closeSheet();go('createMode')" data-t="ws.new">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mask" id="sheetManage" onclick="closeSheet(event)">
+    <div class="sheet">
+      <h3 id="mgName">钱包管理</h3>
+      <p id="mgAddr" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">0x7a3F…9C21</p>
+      <div class="list" style="margin-top:16px">
+        <div class="li" onclick="toast(t('h.soon'))"><span data-t="mg.rename">重命名</span><span class="ar">›</span></div>
+        <div class="li" onclick="closeSheet();viewPhrase()"><span id="mgView" data-t="mg.view">查看助记词</span><span class="ar">›</span></div>
+        <div class="li" style="color:var(--red)" onclick="removeWallet()"><span data-t="mg.del">移除钱包</span><span class="ar">›</span></div>
+      </div>
+      <button class="btn ghost" onclick="closeSheet()" data-t="c.cancel">取消</button>
+    </div>
+  </div>
+
+  <div class="mask" id="sysBio" style="align-items:center;justify-content:center">
+    <div class="sysdlg">
+      <h4 data-t="sys.t">“Wallet” 想要使用 Face ID</h4>
+      <p data-t="sys.b">用于解锁钱包和确认转账</p>
+      <div class="sysbtns">
+        <button onclick="bioDeny()" data-t="sys.no">不允许</button>
+        <button class="pri" onclick="bioAllow()" data-t="sys.ok">好</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mask" id="bioScan" style="align-items:center;justify-content:center">
+    <div style="text-align:center;color:#fff">
+      <div class="spin" style="margin:0 auto 16px;border-color:rgba(255,255,255,.3);border-top-color:#fff"></div>
+      <div style="font-size:15px;font-weight:600" data-t="bio.scan">正在识别…</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="homebar"></div>
+</div>
+
+<script>
+/* ================= i18n ================= */
+const I18N = {
+ zh:{
+  "c.next":"下一步","c.logout":"退出登录","c.cancel":"取消",
+  "login.t":"社交登录","login.s":"支持多种社交账号登录","login.google":"使用 Google 登录","login.apple":"使用 Apple 登录",
+  "login.email":"使用邮箱继续","login.agree":"我已阅读并同意","login.tos":"用户协议","login.pp":"隐私政策",
+  "login.block":"请先勾选并同意用户协议与隐私政策",
+  "au.t":"正在通过 {v} 验证","au.s":"在弹出的页面完成授权，不要关闭 App",
+  "af.t":"{v} 登录失败","af.s":"授权被取消或网络中断。没有创建任何钱包，也没有产生任何链上操作。",
+  "af.code":"错误码 auth_cancelled","af.retry":"重试","af.back":"换其他方式登录",
+  "i.cacc":"当前登录账号：{m}",
+  "ip.s":"选择一种方式找回你的钱包","ip.s1":"助记词或私钥","ip.s2":"用你自己保存的 12／18／24 个单词，或私钥导入。",
+  "ip.c1":"社交账号恢复","ip.c2":"从云端拉取你的加密备份，需要输入当时设置的备份密码。",
+  "ip.tagOk":"有备份","ip.tagNo":"当前账号无备份",
+  "email.t":"邮箱登录","email.s":"我们会发送 6 位验证码到你的邮箱","email.err":"邮箱格式不正确，请检查后重试","email.send":"发送验证码",
+  "otp.t":"输入验证码","otp.s":"验证码已发送至","otp.err":"验证码错误，请重新输入","otp.resend":"重新发送（59s）",
+  "otp.hint":"Demo：输入 111111 查看错误态，其他任意 6 位数字通过",
+  "setup.t":"创建或导入钱包，<br>立即开始使用","setup.create":"创建钱包","setup.import":"导入钱包",
+  "cm.t":"选择备份方式","cm.s":"这决定你在新设备上怎么找回钱包","cm.l1":"本地创建 · 自己保管","cm.l2":"进阶用户",
+  "cm.l3":"助记词只存在这台设备，我们不留任何副本。创建后回到首页，随时可以查看并备份助记词。",
+  "d.s3":"钱包已创建，但还没有备份。回到首页点「未备份」，随时可以查看并抄写助记词。","d.backup":"现在就备份助记词",
+  "t.bkdone":"备份完成，这个钱包已可恢复",
+  "cm.c1":"云端加密备份","cm.c2":"推荐","cm.c3":"用你设置的密码加密后存到服务器。换设备时，用同一个社交账号登录 + 密码即可恢复。",
+  "cm.note":"两种方式都可以之后在「账户 → 安全与备份」里切换。",
+  "w.t":"先看懂这三件事","w.s":"助记词就是你的钱包本身，不是密码。",
+  "w.1":"任何人拿到助记词，都能转走你的全部资产。","w.2":"我们和任何客服都不会向你索要助记词。",
+  "w.3":"助记词丢失，资产永久无法找回，也无法重置。","w.ck":"我已理解，并会离线抄写保存","w.skip":"暂时跳过，先进钱包","r.ph":"备份密码",
+  "m.t":"你的助记词","m.s":"按顺序抄写这 12 个单词并离线保存。","m.reveal":"点击显示","m.copy":"复制","m.copied":"已复制",
+  "m.warn":"截图会同步到云相册，木马可以读取。请手写在纸上。","m.done":"我已抄写",
+  "v.t":"验证助记词","v.s":"请选出第","v.s2":"个单词","v.err":"选错了，请对照你抄写的记录重新选择。","v.re":"重新查看助记词",
+  "p.t":"设置备份密码","p.s":"这个密码用于加密你的助记词备份。密码不可重置，忘记后只能用助记词重新导入钱包。",
+  "p.ph1":"8-20 位，包含字母和数字","p.ph2":"再次输入密码",
+  "p.r1":"长度 8–20 位","p.r2":"同时包含字母和数字","p.r3":"两次输入一致","p.go":"加密并备份",
+  "e.t":"正在备份","e.s":"请勿关闭 App","e.1":"校验密码强度","e.2":"通过加密通道上传","e.3":"服务端用你的密码加密存储","e.4":"备份完成",
+  "i.t":"导入钱包","i.s":"输入 12、18 或 24 位助记词，或私钥","i.tabm":"助记词","i.tabk":"私钥",
+  "i.phm":"用空格分隔输入助记词","i.phk":"输入以 0x 开头的私钥","i.fill":"填入示例","i.paste":"粘贴","i.go":"导入",
+  "i.hint":"Demo：随便输入几个词可看词数／词库校验失败；私钥页输入 0x123 可看格式错误。",
+  "i.e1":"助记词应为 12、18 或 24 个单词，当前 {n} 个","i.e2":"第 {i} 个单词不在词库中：{w}",
+  "i.e3":"校验和不通过，请检查单词顺序是否抄错","i.e4":"私钥格式不正确，应为 0x 开头的 64 位十六进制","i.e5":"请先输入助记词或私钥",
+  "f.t":"找到一个加密备份","f.s":"这个账号备份过一个钱包，输入备份密码即可恢复。","f.date":"备份于 2026-05-18 14:22",
+  "f.go":"用密码恢复","f.alt":"改用助记词导入",
+  "r.t":"输入备份密码","r.s":"用来解密云端备份的那个密码。","r.forgot":"忘记密码？","r.go":"恢复钱包",
+  "r.hint":"Demo 正确密码：demo1234，输错 5 次触发锁定。",
+  "r.e1":"密码错误，还可尝试 {n} 次","r.e2":"尝试次数过多，账号已锁定 30 分钟。你仍可以用助记词导入这个钱包。","r.e3":"请输入备份密码",
+  "bio.t":"开启 Face ID","bio.s":"之后用 Face ID 解锁钱包、确认转账。识别只在这台设备上完成，不会上传。",
+  "bio.note":"之后可以在「安全与备份」里改。","bio.go":"开启 Face ID","bio.alt":"用 6 位密码代替","bio.scan":"正在识别…",
+  "bio.ok":"Face ID 已开启","bio.deny":"未获得 Face ID 权限，改为设置 6 位密码",
+  "sys.t":"“Wallet” 想要使用 Face ID","sys.b":"用于解锁钱包和确认转账","sys.ok":"好","sys.no":"不允许",
+  "pin.t1":"设置 6 位密码","pin.s1":"用于解锁钱包和确认转账。忘记后只能重新导入钱包。",
+  "pin.t2":"再输一次","pin.s2":"确认你刚才设置的 6 位密码",
+  "pin.err":"两次输入不一致，请重新设置","pin.weak":"别用 123456、111111 这类连续或重复数字",
+  "pin.nobio":"这台设备不支持 Face ID 或指纹，请设置 6 位密码",
+  "d.lock1":"已开启 Face ID 解锁","d.lock2":"已设置 6 位密码",
+  "sec.lock":"解锁方式","sec.faceid":"Face ID","sec.pin":"6 位密码",
+  "d.t":"钱包已就绪","d.s":"助记词只保存在这台设备上，记得妥善保管。","d.s2":"备份已加密存储，换设备用同一账号和密码即可恢复。","d.go":"开始使用",
+  "ws.t":"选择钱包","ws.total":"总资产","ws.manage":"管理","ws.imp":"导入","ws.new":"创建",
+  "ws.social":"社交","ws.mnemonic":"助记词","ws.pk":"私钥","ws.switched":"已切换到 {n}",
+  "mg.rename":"重命名","mg.view":"查看助记词","mg.viewpk":"查看私钥","mg.del":"移除钱包",
+  "mg.last":"至少要保留一个钱包","mg.nobk":"这个钱包还没备份，移除后无法找回。请先备份助记词。","mg.done":"钱包已移除",
+  "h.my":"My Wallet","h.nb":"未备份","h.ok":"已备份","h.today":"今日","h.send":"转账","h.recv":"收款","h.asset":"资产",
+  "h.empty":"给钱包充值，开启链上生活","h.add":"添加资产","h.soon":"本次 Demo 不包含这个流程",
+  "s.t":"兑换","s.soon":"Swap 不在本次 Demo 范围内",
+  "a.t":"账户","a.via":"通过 Google 登录","a.sec":"安全与备份","a.nb":"尚未备份","a.okl":"已抄写助记词","a.okc":"已开启云端加密备份",
+  "a.addr":"地址簿","a.cur":"货币与语言","a.help":"帮助中心",
+  "sec.t":"安全与备份","sec.cloud":"云端加密备份","sec.cloudOff":"关闭后，换设备只能用助记词恢复","sec.cloudOn":"已开启，最近备份 刚刚",
+  "sec.pwd":"修改备份密码","sec.view":"查看助记词","sec.dev":"设备管理",
+  "sec.note":"备份密码不可重置。我们只保存密文，忘记密码后需用助记词重新导入。",
+  "n.wallet":"钱包","n.swap":"兑换","n.acct":"账户",
+  "sf.t":"备份密码无法重置","sf.b":"服务端只保存加密后的备份，没有你的密码就解不开，我们也没有副本。请改用助记词或私钥导入钱包，导入后可以重新设置备份密码。","sf.go":"去导入助记词",
+  "sb.t":"这个钱包还没有备份","sb.b":"助记词只存在这台设备上。设备丢失、系统重置或误删 App 后，资产将无法找回。",
+  "sb.go1":"立即备份助记词","sb.go2":"开启云端加密备份","sb.go3":"以后再说",
+  "sl.t":"确认退出登录？","sl.b1":"这个钱包只存在这台设备上，且尚未备份。退出后助记词会被清除，资产无法找回。",
+  "sl.b2":"备份已加密存储。你可以用同一个账号和备份密码重新登录恢复。","sl.go1":"先去备份","sl.go2":"仍要退出",
+  "sp.t":"确认是你本人？","sp.b":"查看助记词需要通过设备锁验证。请确认周围没有摄像头和他人。","sp.go":"验证并查看",
+  "t.copied":"已复制到剪贴板，30 秒后自动清除","t.cloudOn":"云端加密备份已开启","t.cloudOff":"云端加密备份已关闭"
+ },
+ en:{
+  "c.next":"Continue","c.logout":"Log out","c.cancel":"Cancel",
+  "login.t":"Social login","login.s":"Sign in with your social account","login.google":"Sign in with Google","login.apple":"Sign in with Apple",
+  "login.email":"Continue with email","login.agree":"I agree to the","login.tos":"User Agreement","login.pp":"Privacy Policy",
+  "login.block":"Accept the User Agreement and Privacy Policy to continue",
+  "au.t":"Signing in with {v}","au.s":"Finish authorising in the window that opened. Keep the app open.",
+  "af.t":"{v} sign-in failed","af.s":"The authorisation was cancelled or the connection dropped. No wallet was created and nothing happened on-chain.",
+  "af.code":"Error code auth_cancelled","af.retry":"Try again","af.back":"Use another sign-in method",
+  "i.cacc":"Signed in as {m}",
+  "ip.s":"Choose how to recover your wallet","ip.s1":"Recovery phrase or private key","ip.s2":"Import with the 12, 18, or 24 words — or the private key — you saved yourself.",
+  "ip.c1":"Restore from your account","ip.c2":"Pull your encrypted backup from the cloud. You'll need the backup password you set.",
+  "ip.tagOk":"Backup found","ip.tagNo":"No backup on this account",
+  "email.t":"Continue with email","email.s":"We'll send a 6-digit code to your inbox","email.err":"Enter a valid email address","email.send":"Send code",
+  "otp.t":"Enter the code","otp.s":"Code sent to","otp.err":"That code isn't right. Try again.","otp.resend":"Resend in 59s",
+  "otp.hint":"Demo: enter 111111 for the error state, any other 6 digits pass",
+  "setup.t":"Create or import<br>a wallet to get started","setup.create":"Create wallet","setup.import":"Import wallet",
+  "cm.t":"Choose how to back up","cm.s":"This decides how you recover your wallet on a new device","cm.l1":"Local only · Self-custody","cm.l2":"Advanced",
+  "cm.l3":"Your recovery phrase stays on this device and we keep no copy. Once created, you can view and back it up any time from the home screen.",
+  "d.s3":"Your wallet is created but not backed up. Tap “Not backed up” on the home screen to view and write down your recovery phrase.","d.backup":"Back up now",
+  "t.bkdone":"Backed up — this wallet can be recovered now",
+  "cm.c1":"Encrypted cloud backup","cm.c2":"Recommended","cm.c3":"Encrypted with a password you choose and stored on our server. Sign in with the same social account plus your password to restore.",
+  "cm.note":"You can switch either way later in Account → Security & backup.",
+  "w.t":"Three things to know first","w.s":"Your recovery phrase is the wallet itself — it isn't a password.",
+  "w.1":"Anyone who has your recovery phrase can move all your assets.","w.2":"We will never ask you for your recovery phrase.",
+  "w.3":"If you lose it, your assets are gone for good. It cannot be reset.","w.ck":"I understand and will write it down offline","w.skip":"Skip for now","r.ph":"Backup password",
+  "m.t":"Your recovery phrase","m.s":"Write these 12 words down in order and keep them offline.","m.reveal":"Tap to reveal","m.copy":"Copy","m.copied":"Copied",
+  "m.warn":"Screenshots sync to your cloud photo library, where malware can read them. Write it on paper.","m.done":"I've written it down",
+  "v.t":"Confirm your phrase","v.s":"Select word #","v.s2":"","v.err":"That's not the right word. Check the copy you wrote down.","v.re":"Show my phrase again",
+  "p.t":"Set a backup password","p.s":"This password encrypts your recovery phrase backup. It can't be reset — if you forget it, you'll need your recovery phrase to import the wallet again.",
+  "p.ph1":"8–20 characters, letters and numbers","p.ph2":"Re-enter password",
+  "p.r1":"8–20 characters","p.r2":"Contains both letters and numbers","p.r3":"Both entries match","p.go":"Encrypt and back up",
+  "e.t":"Backing up","e.s":"Keep the app open","e.1":"Checking password strength","e.2":"Uploading over an encrypted channel","e.3":"Encrypting on the server with your password","e.4":"Backup complete",
+  "i.t":"Import wallet","i.s":"Enter a 12, 18, or 24-word recovery phrase, or a private key","i.tabm":"Recovery phrase","i.tabk":"Private key",
+  "i.phm":"Enter your recovery phrase, separated by spaces","i.phk":"Enter a private key starting with 0x","i.fill":"Fill demo data","i.paste":"Paste","i.go":"Import",
+  "i.hint":"Demo: type a few random words to see word-count / word-list errors; enter 0x123 on the private key tab for a format error.",
+  "i.e1":"A recovery phrase must be 12, 18, or 24 words. You entered {n}.","i.e2":"Word #{i} isn't in the word list: {w}",
+  "i.e3":"Checksum failed. Check that the words are in the right order.","i.e4":"That private key isn't valid. It should be 0x followed by 64 hex characters.","i.e5":"Enter your recovery phrase or private key first",
+  "f.t":"Encrypted backup found","f.s":"This account has a backed-up wallet. Enter your backup password to restore it.","f.date":"Backed up 2026-05-18 14:22",
+  "f.go":"Restore with password","f.alt":"Import with recovery phrase instead",
+  "r.t":"Enter your backup password","r.s":"The password you used to encrypt this backup.","r.forgot":"Forgot password?","r.go":"Restore wallet",
+  "r.hint":"Demo password: demo1234. Five wrong tries locks the account.",
+  "r.e1":"Incorrect password. {n} attempts left.","r.e2":"Too many attempts. This account is locked for 30 minutes. You can still import this wallet with your recovery phrase.","r.e3":"Enter your backup password",
+  "bio.t":"Turn on Face ID","bio.s":"Use Face ID to unlock your wallet and confirm transactions. It's checked on this device only and never uploaded.",
+  "bio.note":"You can change this later in Security & backup.","bio.go":"Turn on Face ID","bio.alt":"Use a 6-digit passcode instead","bio.scan":"Scanning…",
+  "bio.ok":"Face ID is on","bio.deny":"Face ID permission was denied. Set a 6-digit passcode instead.",
+  "sys.t":"“Wallet” Would Like to Use Face ID","sys.b":"To unlock your wallet and confirm transactions","sys.ok":"OK","sys.no":"Don't Allow",
+  "pin.t1":"Set a 6-digit passcode","pin.s1":"Used to unlock your wallet and confirm transactions. If you forget it, you'll need to import the wallet again.",
+  "pin.t2":"Enter it again","pin.s2":"Confirm the passcode you just set",
+  "pin.err":"Those didn't match. Set your passcode again.","pin.weak":"Avoid sequential or repeated digits like 123456 or 111111",
+  "pin.nobio":"This device doesn't support Face ID or fingerprint. Set a 6-digit passcode.",
+  "d.lock1":"Face ID unlock is on","d.lock2":"6-digit passcode set",
+  "sec.lock":"Unlock method","sec.faceid":"Face ID","sec.pin":"6-digit passcode",
+  "d.t":"Your wallet is ready","d.s":"Your recovery phrase is stored only on this device. Keep it safe.","d.s2":"Your backup is encrypted and stored. Sign in with the same account and password to restore it.","d.go":"Get started",
+  "ws.t":"Select wallet","ws.total":"Total assets","ws.manage":"Manage","ws.imp":"Import","ws.new":"Create",
+  "ws.social":"Social","ws.mnemonic":"Recovery phrase","ws.pk":"Private key","ws.switched":"Switched to {n}",
+  "mg.rename":"Rename","mg.view":"View recovery phrase","mg.viewpk":"View private key","mg.del":"Remove wallet",
+  "mg.last":"Keep at least one wallet","mg.nobk":"This wallet isn't backed up. Remove it and it's gone for good — back up the recovery phrase first.","mg.done":"Wallet removed",
+  "h.my":"My Wallet","h.nb":"Not backed up","h.ok":"Backed up","h.today":"Today","h.send":"Send","h.recv":"Receive","h.asset":"Assets",
+  "h.empty":"Add funds to start<br>using your wallet on-chain","h.add":"Add funds","h.soon":"Not part of this demo",
+  "s.t":"Swap","s.soon":"Swap isn't part of this demo",
+  "a.t":"Account","a.via":"Signed in with Google","a.sec":"Security & backup","a.nb":"Not backed up yet","a.okl":"Recovery phrase written down","a.okc":"Encrypted cloud backup on",
+  "a.addr":"Address book","a.cur":"Currency & language","a.help":"Help",
+  "sec.t":"Security & backup","sec.cloud":"Encrypted cloud backup","sec.cloudOff":"Off — a new device can only be restored with your recovery phrase","sec.cloudOn":"On — last backed up just now",
+  "sec.pwd":"Change backup password","sec.view":"View recovery phrase","sec.dev":"Devices",
+  "sec.note":"The backup password can't be reset. We only store the encrypted backup — if you forget the password, import the wallet with your recovery phrase.",
+  "n.wallet":"Wallet","n.swap":"Swap","n.acct":"Account",
+  "sf.t":"The backup password can't be reset","sf.b":"We only store the encrypted backup. Without your password it can't be decrypted, and we don't keep a copy. Import the wallet with your recovery phrase or private key, then set a new backup password.","sf.go":"Import recovery phrase",
+  "sb.t":"This wallet isn't backed up","sb.b":"Your recovery phrase exists only on this device. If you lose it, reset your phone, or delete the app, your assets can't be recovered.",
+  "sb.go1":"Back up recovery phrase","sb.go2":"Turn on encrypted backup","sb.go3":"Later",
+  "sl.t":"Log out?","sl.b1":"This wallet exists only on this device and isn't backed up. Logging out erases the recovery phrase and your assets can't be recovered.",
+  "sl.b2":"Your backup is encrypted and stored. Sign back in with the same account and backup password to restore it.","sl.go1":"Back up first","sl.go2":"Log out anyway",
+  "sp.t":"Confirm it's you","sp.b":"Viewing your recovery phrase requires device authentication. Make sure no one — and no camera — can see your screen.","sp.go":"Authenticate and view",
+  "t.copied":"Copied. Clipboard clears in 30 seconds.","t.cloudOn":"Encrypted cloud backup is on","t.cloudOff":"Encrypted cloud backup is off"
+ }
+};
+let LANG='zh';
+function t(k,vars){let s=(I18N[LANG]&&I18N[LANG][k])||k;if(vars)for(const v in vars)s=s.replace('{'+v+'}',vars[v]);return s;}
+function setLang(l){
+  LANG=l;
+  document.getElementById('lz').className=l==='zh'?'on':'';
+  document.getElementById('le').className=l==='en'?'on':'';
+  document.documentElement.lang=l;
+  document.querySelectorAll('[data-t]').forEach(function(el){el.innerHTML=t(el.getAttribute('data-t'));});
+  document.getElementById('p1').placeholder=t('p.ph1');
+  document.getElementById('p2').placeholder=t('p.ph2');
+  document.getElementById('rp').placeholder=t('r.ph');
+  document.getElementById('impIn').placeholder=t(S.impTab==='m'?'i.phm':'i.phk');
+  document.getElementById('impAcc').textContent=t('i.cacc',{m:S.email});
+  renderPin();
+  if(S.wallets.length)renderWallets();
+  if(S.via&&S.via!=='Email'){
+    document.getElementById('authingT').innerHTML=t('au.t',{v:S.via});
+    document.getElementById('afT').innerHTML=t('af.t',{v:S.via});
+  }
+  syncState();
+}
+
+/* ================= state ================= */
+const WORDLIST=["abandon","ability","absorb","access","across","action","advice","aisle","alpha","amber","anchor","animal",
+"april","arena","armor","arrow","aspect","atom","august","author","autumn","avoid","awake","balance","bamboo","banner",
+"basket","beach","beyond","bicycle","binary","bishop","bloom","bonus","bridge","bright","bronze","bubble","budget","butter",
+"cabin","cactus","camera","canyon","carbon","castle","cattle","cement","census","cereal","chalk","charge","cherry","circle",
+"clarify","clever","cliff","cloud","cobalt","coffee","column","comfort","copper","coral","cotton","crane","credit","cricket",
+"crystal","cupboard","curtain","cushion","cyclone","daily","dance","dawn","decade","defend","delta","denim","desert","detail",
+"diamond","digital","dinner","doctor","dolphin","domain","donate","dragon","drift","during","eager","early","echo","edge"];
+const DEMO12=["ridge","fabric","salute","gospel","hunt","clever","copper","tunnel","auction","voyage","market","frozen"];
+const DEMO_PK="0x4c0883a69102937d6231471b5dbb6204fe512961708279fe8c4a1b4d3e0f9a21";
+const ASSETS=[
+  {s:"NEAR",c:"#16E39A",p:"$20.00",d:"-0.02%",n:false,q:"4.785 NEAR",v:"$4.72"},
+  {s:"XLM", c:"#0B1437",p:"$20.00",d:"+0.02%",n:true, q:"4.785 XLM", v:"$4.72",tag:"NEAR"},
+  {s:"ALGO",c:"#0E2233",p:"$20.00",d:"-0.02%",n:false,q:"4.785 ALGO",v:"$4.72"},
+  {s:"PYUSD",c:"#0B1437",p:"$20.00",d:"+0.02%",n:false,q:"4.785 PYUSD",v:"$4.72"}
+];
+const S={scenario:'local',agree:true,warnOk:false,revealed:false,mnemonic:[],vq:[],vi:0,failAuth:false,
+  impTab:'m',cloud:false,backedUp:false,funded:false,attempts:5,locked:false,email:'ares@gmail.com',via:'Google',
+  hasBio:true,lock:null,pin:'',pin1:'',pinStage:1,doneMsg:'',relock:false,impWay:null,
+  wallets:[],cw:0,newType:null,mg:0,backupOnly:false};
+let stack=['login'];
+
+function log(m){const l=document.getElementById('log');const d=document.createElement('div');d.textContent='› '+m;l.appendChild(d);l.scrollTop=l.scrollHeight;}
+function cur(){return stack[stack.length-1];}
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('active',s.id===id);});
+  const bar=document.getElementById('tabbar');
+  const isTab=['home','swap','account'].indexOf(id)>=0;
+  bar.classList.toggle('show',isTab);
+  document.getElementById('tbW').className=id==='home'?'on':'';
+  document.getElementById('tbS').className=id==='swap'?'on':'';
+  document.getElementById('tbA').className=id==='account'?'on':'';
+  const el=document.getElementById(id); if(el) el.scrollTop=0;
+}
+function go(id,quiet){
+  if(id==='importPick')renderImpPick();
+  stack.push(id);show(id);if(!quiet)log(id);syncState();
+}
+function back(){if(stack.length>1){stack.pop();show(cur());log('← '+cur());syncState();}}
+function reset(to){stack=[to];show(to);syncState();}
+function tab(id){stack=[id];show(id);log(id);syncState();}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},2600);}
+function openSheet(id){document.getElementById(id).classList.add('show');}
+function closeSheet(e){if(e&&e.target&&!e.target.classList.contains('mask'))return;
+  document.querySelectorAll('.mask').forEach(function(m){m.classList.remove('show');});
+  const p=document.getElementById('wPill');if(p)p.classList.remove('open');}
+function closeSheetGo(id){document.querySelectorAll('.mask').forEach(function(m){m.classList.remove('show');});
+  const p=document.getElementById('wPill');if(p)p.classList.remove('open');go(id);}
+function clearErr(errId,fieldId){document.getElementById(errId).classList.remove('show');
+  if(fieldId)document.getElementById(fieldId).classList.remove('err');}
+function showErr(errId,fieldId,msg){const e=document.getElementById(errId);e.textContent=msg;e.classList.add('show');
+  if(fieldId)document.getElementById(fieldId).classList.add('err');}
+
+/* ================= scenarios ================= */
+function scen(k){
+  S.scenario=k;S.agree=true;S.warnOk=false;S.revealed=false;S.cloud=false;S.backedUp=false;
+  S.funded=false;S.attempts=5;S.locked=false;S.vi=0;S.mnemonic=[];
+  S.lock=null;S.relock=false;S.pin='';S.pin1='';S.pinStage=1;S.wallets=[];S.cw=0;S.newType=null;S.backupOnly=false;
+  if(k==='homefund')S.lock=S.hasBio?'bio':'pin';
+  document.getElementById('rBtn').disabled=false;
+  impTab('m');
+  document.getElementById('agreeCb').className='cb on';
+  document.getElementById('warnCb').className='cb sq';
+  document.getElementById('warnNext').disabled=true;
+  document.getElementById('optLocal').classList.remove('on');
+  document.getElementById('optCloud').classList.remove('on');
+  document.getElementById('cmNext').disabled=true;
+  document.getElementById('p1').value='';document.getElementById('p2').value='';checkPwd();
+  document.getElementById('impIn').value='';clearErr('impErr','impIn');
+  document.getElementById('rp').value='';clearErr('rErr','rp');
+  document.getElementById('log').innerHTML='';
+  const names={local:'A 本地创建',cloud:'B 云端加密备份',restore:'C 换设备恢复',import:'D 导入',homefund:'E 首页'};
+  log('场景 '+names[k]);
+  if(k==='homefund'){
+    S.funded=true;S.backedUp=true;S.cloud=true;
+    S.wallets=[];
+    [['social',9870.06,true],['pk',2300,false],['mnemonic',1200,false],['mnemonic',400.5,false]]
+      .forEach(function(x){S.backedUp=true;S.cloud=x[2];addWallet(x[0],x[1]);});
+    S.cw=0;const c=curW();S.funded=c.funded;S.cloud=c.cloud;S.backedUp=c.backedUp;
+    renderAssets();reset('home');return;
+  }
+  reset('login');
+}
+
+/* ================= 1 login ================= */
+function toggleAgree(){S.agree=!S.agree;document.getElementById('agreeCb').className='cb'+(S.agree?' on':'');}
+function toggleFail(){
+  S.failAuth=!S.failAuth;
+  document.getElementById('failSw').innerHTML='<b>模拟社交登录失败 · '+(S.failAuth?'开':'关')+'</b><span>打开后点 Google／Apple 会进入失败页</span>';
+}
+function auth(kind){
+  if(!S.agree){toast(t('login.block'));log('拦截：协议未勾选');return;}
+  if(kind==='email'){go('email');return;}
+  S.via=kind==='google'?'Google':'Apple';
+  document.getElementById('authingT').innerHTML=t('au.t',{v:S.via});
+  log(S.via+' 授权中');
+  go('authing',true);
+  clearTimeout(S._auth);
+  S._auth=setTimeout(function(){
+    if(cur()!=='authing')return;
+    if(S.failAuth){
+      document.getElementById('afT').innerHTML=t('af.t',{v:S.via});
+      stack.pop();go('authfail');log(S.via+' 登录失败');
+      return;
+    }
+    document.getElementById('accVia').textContent=LANG==='zh'?('通过 '+S.via+' 登录'):('Signed in with '+S.via);
+    log(S.via+' 登录成功');
+    stack.pop();afterAuth();
+  },1300);
+}
+function cancelAuth(){clearTimeout(S._auth);log('用户取消授权');back();}
+function retryAuth(){stack.pop();auth(S.via==='Apple'?'apple':'google');}
+function afterAuth(){
+  if(S.scenario==='restore'){go('found');}else{go('setup');}
+}
+function sendCode(){
+  const v=document.getElementById('emailIn').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){showErr('emailErr','emailIn',t('email.err'));return;}
+  S.email=v;S.via='Email';
+  document.getElementById('otpMail').textContent=v;
+  document.getElementById('accMail').textContent=v;
+  document.getElementById('accVia').textContent=LANG==='zh'?'通过邮箱登录':'Signed in with email';
+  otpIn.value='';renderOtp();
+  go('otp');setTimeout(focusOtp,220);
+}
+/* 单 input 承载 6 位，格子只做展示，避免多输入框互相抢焦点 */
+const otpIn=document.getElementById('otpHidden');
+function focusOtp(){otpIn.focus();}
+function renderOtp(){
+  const v=otpIn.value;
+  const cells=document.querySelectorAll('#otpBox b');
+  cells.forEach(function(c,i){
+    c.textContent=v[i]||'';
+    c.className=(v[i]?'on':'')+(i===v.length&&v.length<6?' cur':'');
+  });
+}
+otpIn.addEventListener('input',function(){
+  const clean=otpIn.value.replace(/\D/g,'').slice(0,6);
+  if(otpIn.value!==clean)otpIn.value=clean;
+  document.getElementById('otpBox').classList.remove('err');clearErr('otpErr');
+  renderOtp();
+  if(clean.length===6)setTimeout(function(){checkOtp(clean);},120);
+});
+otpIn.addEventListener('focus',renderOtp);
+otpIn.addEventListener('blur',renderOtp);
+function checkOtp(code){
+  if(code==='111111'){
+    document.getElementById('otpBox').classList.add('err');
+    showErr('otpErr',null,t('otp.err'));
+    otpIn.value='';renderOtp();focusOtp();log('验证码错误');
+    return;
+  }
+  log('邮箱验证通过');afterAuth();
+}
+
+/* ================= 5 create mode ================= */
+function pickMode(m){
+  S.cloud=(m==='cloud');
+  document.getElementById('optLocal').classList.toggle('on',m==='local');
+  document.getElementById('optCloud').classList.toggle('on',m==='cloud');
+  document.getElementById('cmNext').disabled=false;
+}
+function modeNext(){
+  genSilent();
+  if(S.cloud){S.newType='social';log('云端加密备份 → 设密码');go('pwd');return;}
+  S.newType='mnemonic';S.backedUp=false;
+  log('本地创建 → 直接设解锁方式，助记词留到首页引导备份');
+  startUnlock(t('d.s3'));
+}
+function genSilent(){
+  if(S.mnemonic.length)return;
+  const pool=WORDLIST.slice();S.mnemonic=[];
+  for(let i=0;i<12;i++)S.mnemonic.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+}
+/* 从首页／账户页发起的补备份 */
+function startBackup(kind){
+  S.backupOnly=true;
+  document.querySelectorAll('.mask').forEach(function(m){m.classList.remove('show');});
+  if(kind==='cloud'){log('补备份：云端加密');go('pwd');return;}
+  log('补备份：助记词');S.warnOk=false;
+  document.getElementById('warnCb').className='cb sq';
+  document.getElementById('warnNext').disabled=true;
+  go('warn');
+}
+function toggleWarn(){S.warnOk=!S.warnOk;
+  document.getElementById('warnCb').className='cb sq'+(S.warnOk?' on':'');
+  document.getElementById('warnNext').disabled=!S.warnOk;}
+
+/* ================= 7 mnemonic ================= */
+function genMnemonic(){
+  if(!S.mnemonic.length){
+    const pool=WORDLIST.slice();S.mnemonic=[];
+    for(let i=0;i<12;i++)S.mnemonic.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  const box=document.getElementById('words');
+  box.querySelectorAll('.w').forEach(function(n){n.remove();});
+  S.mnemonic.forEach(function(w,i){
+    const d=document.createElement('div');d.className='w';
+    d.innerHTML='<i>'+(i+1)+'</i>'+w;box.appendChild(d);
+  });
+  S.revealed=false;box.classList.add('blur');
+  document.getElementById('reveal').classList.remove('hide');
+  document.getElementById('mnNext').disabled=true;
+  go('mnemonic');
+}
+function revealWords(){
+  S.revealed=true;
+  document.getElementById('words').classList.remove('blur');
+  document.getElementById('reveal').classList.add('hide');
+  document.getElementById('mnNext').disabled=false;
+  log('助记词已展示');
+}
+function copyWords(){
+  if(!S.revealed){revealWords();return;}
+  const b=document.getElementById('copyBtn');b.querySelector('span').textContent=t('m.copied');
+  toast(t('t.copied'));
+  setTimeout(function(){b.querySelector('span').textContent=t('m.copy');},2200);
+}
+/* ================= 8 verify ================= */
+function startVerify(){
+  const idx=[];while(idx.length<3){const r=Math.floor(Math.random()*12);if(idx.indexOf(r)<0)idx.push(r);}
+  idx.sort(function(a,b){return a-b;});
+  S.vq=idx;S.vi=0;renderVerify();go('verify');
+}
+function renderVerify(){
+  clearErr('vErr');
+  const slots=document.getElementById('vSlots');slots.innerHTML='';
+  S.vq.forEach(function(q,i){
+    const d=document.createElement('div');
+    d.className='slot'+(i<S.vi?' done':(i===S.vi?' now':''));
+    d.textContent=i<S.vi?S.mnemonic[q]:('#'+(q+1));
+    slots.appendChild(d);
+  });
+  if(S.vi>=3){finishVerify();return;}
+  const q=S.vq[S.vi];
+  document.getElementById('vIdx').textContent=(q+1);
+  const correct=S.mnemonic[q];
+  const opts=[correct];
+  while(opts.length<4){const w=WORDLIST[Math.floor(Math.random()*WORDLIST.length)];if(opts.indexOf(w)<0&&S.mnemonic.indexOf(w)<0)opts.push(w);}
+  opts.sort(function(){return Math.random()-.5;});
+  const box=document.getElementById('vOpts');box.innerHTML='';
+  opts.forEach(function(w){
+    const b=document.createElement('button');b.textContent=w;
+    b.onclick=function(){
+      if(w===correct){S.vi++;renderVerify();}
+      else{b.classList.add('bad');showErr('vErr',null,t('v.err'));log('验证选错');}
+    };
+    box.appendChild(b);
+  });
+}
+function finishVerify(){
+  document.getElementById('vOpts').innerHTML='';
+  S.backedUp=true;log('助记词验证通过');
+  setTimeout(function(){markBackedUp();},350);
+}
+/* 补备份完成：不再新建钱包，只把当前钱包标记为已备份 */
+function markBackedUp(){
+  S.backupOnly=false;
+  if(S.wallets.length){const wl=curW();wl.backedUp=S.backedUp;wl.cloud=S.cloud;}
+  syncState();stack=['home'];show('home');
+  document.getElementById('tabbar').classList.add('show');
+  log('备份完成');toast(t('t.bkdone'));
+}
+
+/* ================= 9 password ================= */
+function checkPwd(){
+  const a=document.getElementById('p1').value,b=document.getElementById('p2').value;
+  const r1=a.length>=8&&a.length<=20;
+  const r2=/[A-Za-z]/.test(a)&&/[0-9]/.test(a);
+  const r3=a.length>0&&a===b;
+  [['r1',r1],['r2',r2],['r3',r3]].forEach(function(p){
+    const el=document.getElementById(p[0]);
+    el.className=p[1]?'ok':'';el.querySelector('i').textContent=p[1]?'✓':'○';
+  });
+  document.getElementById('pwdNext').disabled=!(r1&&r2&&r3);
+}
+function encrypt(){
+  go('enc');
+  const ids=['e1','e2','e3','e4'];
+  ids.forEach(function(id){document.getElementById(id).className='';});
+  let i=0;
+  (function step(){
+    if(i>0)document.getElementById(ids[i-1]).className='ok';
+    if(i<4){document.getElementById(ids[i]).className='on';i++;setTimeout(step,700);}
+    else{
+      S.cloud=true;S.backedUp=true;log('云端加密备份完成');
+      if(S.backupOnly){setTimeout(markBackedUp,450);return;}
+      setTimeout(function(){finishDone(true);},450);
+    }
+  })();
+}
+function finishDone(cloud){startUnlock(cloud?t('d.s2'):t('d.s'));}
+
+/* ============ 创建最后一步：Face ID / 6 位密码 ============ */
+function toggleBio(){
+  S.hasBio=!S.hasBio;
+  document.getElementById('bioSw').innerHTML='<b>设备支持 Face ID · '+(S.hasBio?'是':'否')+'</b><span>关掉后最后一步直接降级到 6 位密码</span>';
+}
+function startUnlock(msg){
+  S.doneMsg=msg;S.pin='';S.pin1='';S.pinStage=1;
+  if(S.hasBio){log('进入 Face ID 设置');go('bio');}
+  else{log('设备无生物识别 → 降级 6 位密码');toPin(true);}
+}
+function askBio(){openSheet('sysBio');}
+function bioDeny(){
+  closeSheet();log('用户拒绝 Face ID 权限 → 降级 6 位密码');
+  toast(t('bio.deny'));toPin(false);
+}
+function bioAllow(){
+  closeSheet();openSheet('bioScan');
+  setTimeout(function(){
+    closeSheet();S.lock='bio';log('Face ID 已开启');
+    if(S.relock){S.relock=false;toast(t('bio.ok'));syncState();go('security');return;}
+    unlockDone();
+  },1100);
+}
+function toPin(nobio){
+  S.pin='';S.pin1='';S.pinStage=1;
+  document.getElementById('pinErr').textContent=nobio?t('pin.nobio'):'';
+  document.getElementById('pinErr').classList.toggle('show',!!nobio);
+  renderPin();go('pin');
+}
+function pinBack(){
+  if(S.pinStage===2){S.pinStage=1;S.pin='';S.pin1='';clearErr('pinErr');renderPin();return;}
+  back();
+}
+function renderPin(){
+  document.getElementById('pinT').innerHTML=t(S.pinStage===1?'pin.t1':'pin.t2');
+  document.getElementById('pinS').innerHTML=t(S.pinStage===1?'pin.s1':'pin.s2');
+  const dots=document.getElementById('pinDots');
+  dots.className='dots';
+  dots.querySelectorAll('i').forEach(function(el,i){el.className=i<S.pin.length?'on':'';});
+  const k=document.getElementById('keys');
+  if(!k.childElementCount){
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(function(n){
+      const b=document.createElement('button');b.textContent=n;
+      if(n==='')b.className='blank';else if(n==='⌫')b.className='fn';
+      b.onclick=function(){pinKey(n);};k.appendChild(b);
+    });
+  }
+}
+function pinKey(n){
+  if(n==='')return;
+  clearErr('pinErr');
+  if(n==='⌫'){S.pin=S.pin.slice(0,-1);renderPin();return;}
+  if(S.pin.length>=6)return;
+  S.pin+=n;renderPin();
+  if(S.pin.length===6)setTimeout(pinFull,150);
+}
+function pinFull(){
+  const weak=/^(\d)\1{5}$/.test(S.pin)||'0123456789'.indexOf(S.pin)>=0||'9876543210'.indexOf(S.pin)>=0;
+  if(S.pinStage===1){
+    if(weak){badPin(t('pin.weak'));log('弱密码被拦截');return;}
+    S.pin1=S.pin;S.pin='';S.pinStage=2;renderPin();return;
+  }
+  if(S.pin!==S.pin1){badPin(t('pin.err'));S.pinStage=1;S.pin1='';log('两次密码不一致');return;}
+  S.lock='pin';log('6 位密码设置完成');
+  if(S.relock){S.relock=false;toast(t('d.lock2'));syncState();go('security');return;}
+  unlockDone();
+}
+function badPin(msg){
+  const dots=document.getElementById('pinDots');
+  dots.className='dots bad shake';
+  showErr('pinErr',null,msg);
+  setTimeout(function(){S.pin='';renderPin();document.getElementById('pinErr').classList.add('show');},450);
+}
+function unlockDone(){
+  addWallet(S.newType||'mnemonic',S.funded?9870.06:0);
+  document.getElementById('doneSub').innerHTML=S.doneMsg;
+  document.getElementById('doneLock').textContent=t(S.lock==='bio'?'d.lock1':'d.lock2');
+  go('done');
+}
+function changeLock(){
+  S.relock=true;
+  if(S.hasBio&&S.lock!=='bio'){go('bio');return;}
+  toPin(!S.hasBio);
+}
+
+/* ================= 11 import ================= */
+function impTab(k){
+  S.impTab=k;
+  document.getElementById('tabM').className=k==='m'?'on':'';
+  document.getElementById('tabK').className=k==='k'?'on':'';
+  const el=document.getElementById('impIn');
+  el.placeholder=t(k==='m'?'i.phm':'i.phk');el.value='';clearErr('impErr','impIn');
+}
+/* 导入方式选择 */
+function renderImpPick(){
+  const has=S.scenario==='restore';
+  const social=document.getElementById('optSocial');
+  social.style.opacity=has?1:.45;
+  social.style.pointerEvents=has?'auto':'none';
+  document.getElementById('impTag').innerHTML=t(has?'ip.tagOk':'ip.tagNo');
+  document.getElementById('impTag').className='tag'+(has?'':' grey');
+  document.getElementById('impAcc').textContent=t('i.cacc',{m:S.email});
+  S.impWay=null;
+  document.getElementById('optSelf').classList.remove('on');
+  social.classList.remove('on');
+  document.getElementById('ipNext').disabled=true;
+}
+function pickImp(w){
+  S.impWay=w;
+  document.getElementById('optSelf').classList.toggle('on',w==='self');
+  document.getElementById('optSocial').classList.toggle('on',w==='social');
+  document.getElementById('ipNext').disabled=false;
+}
+function impNext(){
+  if(S.impWay==='social'){log('导入方式：社交账号恢复');go('found');return;}
+  log('导入方式：助记词／私钥');impTab('m');go('import');
+}
+function fillDemo(){document.getElementById('impIn').value=S.impTab==='m'?DEMO12.join(' '):DEMO_PK;clearErr('impErr','impIn');}
+function pasteDemo(){fillDemo();toast(LANG==='zh'?'已从剪贴板粘贴':'Pasted from clipboard');}
+function doImport(){
+  const raw=document.getElementById('impIn').value.trim().replace(/\s+/g,' ');
+  if(!raw){showErr('impErr','impIn',t('i.e5'));return;}
+  if(S.impTab==='k'){
+    if(!/^0x[0-9a-fA-F]{64}$/.test(raw)){showErr('impErr','impIn',t('i.e4'));log('私钥格式错误');return;}
+  }else{
+    const ws=raw.toLowerCase().split(' ');
+    if([12,18,24].indexOf(ws.length)<0){showErr('impErr','impIn',t('i.e1',{n:ws.length}));log('词数校验失败');return;}
+    for(let i=0;i<ws.length;i++){
+      if(WORDLIST.indexOf(ws[i])<0&&DEMO12.indexOf(ws[i])<0){
+        showErr('impErr','impIn',t('i.e2',{i:i+1,w:ws[i]}));log('词库校验失败');return;}
+    }
+    if(ws.length===12&&ws.join(' ')!==DEMO12.join(' ')&&Math.random()<0){/* checksum hook */}
+    S.mnemonic=ws.slice(0,12);
+  }
+  S.backedUp=true;S.cloud=false;S.funded=true;
+  S.newType=S.impTab==='k'?'pk':'mnemonic';log('导入成功');
+  startUnlock(LANG==='zh'
+    ? '钱包已导入。助记词保存在这台设备上，可在「安全与备份」开启云端加密备份。'
+    : 'Wallet imported. Your recovery phrase is stored on this device — you can turn on encrypted backup in Security & backup.');
+}
+
+/* ================= 13 restore ================= */
+function doRestore(){
+  if(S.locked){showErr('rErr','rp',t('r.e2'));return;}
+  const v=document.getElementById('rp').value;
+  if(!v){showErr('rErr','rp',t('r.e3'));return;}
+  if(v==='demo1234'){
+    S.cloud=true;S.backedUp=true;S.funded=true;S.mnemonic=DEMO12.slice();S.newType='social';
+    log('解密成功，钱包已恢复');
+    startUnlock(t('d.s2'));return;
+  }
+  S.attempts--;
+  if(S.attempts<=0){
+    S.locked=true;showErr('rErr','rp',t('r.e2'));
+    document.getElementById('rBtn').disabled=true;log('连续错误，账号锁定');
+  }else{
+    showErr('rErr','rp',t('r.e1',{n:S.attempts}));log('密码错误，剩余 '+S.attempts+' 次');
+  }
+}
+
+/* ================= home / account ================= */
+/* ============ 多钱包与切换 ============ */
+const ADDRS=['0x7a3F4b19dE82c05A7f31b6C9e4a1D8F0b2C39C21','0x39B2e77cA401f8D6b25E90c7A3f1B4d8E60c7A15',
+'0xC41d90Ae7B3f28D5610aB9c4E7f21D839bE04F72','0x5E8a2C61Df94b03A7c15E8B26fD470a91C3b8E44'];
+function walletName(type,n){
+  const nm='My Wallet '+n;
+  return {zh:nm,en:nm};
+}
+function addWallet(type,bal){
+  const n=S.wallets.length+1;
+  S.wallets.push({type:type,n:n,name:walletName(type,n),bal:bal,funded:bal>0,
+    backedUp:S.backedUp,cloud:S.cloud,addr:ADDRS[(n-1)%4]});
+  S.cw=S.wallets.length-1;
+  log('新增钱包：'+S.wallets[S.cw].name.zh);
+}
+function curW(){return S.wallets[S.cw];}
+function money(v){return '$ '+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function tagOf(type){return t('ws.'+type);}
+function ensureWallet(){
+  if(S.wallets.length)return;
+  addWallet(S.cloud?'social':'mnemonic',S.funded?9870.06:0);
+  syncState();
+}
+function openWallets(){
+  ensureWallet();renderWallets();
+  document.getElementById('wPill').classList.add('open');
+  openSheet('sheetWallets');log('打开钱包切换');
+}
+function renderWallets(){
+  const box=document.getElementById('wList');box.innerHTML='';
+  let total=0;
+  S.wallets.forEach(function(wl,i){
+    total+=wl.bal;
+    const el=document.createElement('div');
+    el.className='witem'+(i===S.cw?' on':'');
+    el.innerHTML='<div class="ic">'+(wl.n||i+1)+'</div>'+
+      '<div class="info"><div class="nm">'+(LANG==='zh'?wl.name.zh:wl.name.en)+
+      '<span class="wtag">'+tagOf(wl.type)+'</span>'+
+      ((!wl.backedUp&&!wl.cloud)?'<span class="wtag nb">'+t('h.nb')+'</span>':'')+'</div>'+
+      '<div class="bal">'+money(wl.bal)+'</div></div>';
+    const mg=document.createElement('button');
+    mg.className='mgbtn';mg.textContent=t('ws.manage');
+    mg.onclick=function(e){e.stopPropagation();manageWallet(i);};
+    el.appendChild(mg);
+    el.onclick=function(){switchWallet(i);};
+    box.appendChild(el);
+  });
+  document.getElementById('wsTotal').textContent=money(total);
+}
+function switchWallet(i){
+  if(i===S.cw){closeSheet();return;}
+  S.cw=i;const wl=curW();
+  S.funded=wl.funded;S.backedUp=wl.backedUp;S.cloud=wl.cloud;
+  renderAssets();syncState();closeSheet();
+  log('切换到 '+wl.name.zh);
+  toast(t('ws.switched',{n:LANG==='zh'?wl.name.zh:wl.name.en}));
+}
+function manageWallet(i){
+  S.mg=i;const wl=S.wallets[i];
+  document.getElementById('mgName').textContent=LANG==='zh'?wl.name.zh:wl.name.en;
+  document.getElementById('mgAddr').textContent=wl.addr.slice(0,8)+'…'+wl.addr.slice(-4);
+  document.getElementById('mgView').innerHTML=t(wl.type==='pk'?'mg.viewpk':'mg.view');
+  closeSheet();openSheet('sheetManage');
+}
+function removeWallet(){
+  if(S.wallets.length<=1){toast(t('mg.last'));return;}
+  const wl=S.wallets[S.mg];
+  if(!wl.backedUp&&!wl.cloud){toast(t('mg.nobk'));return;}
+  S.wallets.splice(S.mg,1);
+  if(S.cw>=S.wallets.length)S.cw=S.wallets.length-1;
+  else if(S.mg<S.cw)S.cw--;
+  const c=curW();S.funded=c.funded;S.backedUp=c.backedUp;S.cloud=c.cloud;
+  renderAssets();syncState();closeSheet();
+  log('移除钱包 '+wl.name.zh);toast(t('mg.done'));
+}
+function enterHome(){renderAssets();tab('home');}
+function renderAssets(){
+  const list=document.getElementById('assetList');list.innerHTML='';
+  if(!S.funded){document.getElementById('hEmpty').style.display='flex';return;}
+  document.getElementById('hEmpty').style.display='none';
+  ASSETS.forEach(function(a){
+    const d=document.createElement('div');d.className='asset';
+    const up=a.d.charAt(0)==='+';
+    d.innerHTML='<div class="lg" style="background:'+a.c+'">'+a.s.charAt(0)+'</div>'+
+      '<div><div class="nm">'+a.s+(a.tag?' <span style="font-size:11px;font-weight:600;color:#5A51C6;background:#EDEBFA;padding:2px 7px;border-radius:8px;vertical-align:middle">'+a.tag+'</span>':'')+'</div>'+
+      '<div class="px">'+a.p+' <em style="color:'+(up?'#16C784':'#F04A5E')+'">'+a.d+'</em></div></div>'+
+      '<div class="rt"><div class="q">'+a.q+'</div><div class="v">'+a.v+'</div></div>';
+    list.appendChild(d);
+  });
+}
+function syncState(){
+  const wl=S.wallets.length?curW():null;
+  if(wl){
+    document.getElementById('wName').textContent=LANG==='zh'?wl.name.zh:wl.name.en;
+    document.getElementById('doneAddr').textContent=wl.addr;
+  }
+  document.getElementById('hBal').textContent=wl?money(wl.bal):(S.funded?'$ 9,870.06':'$ 00.00');
+  document.getElementById('hChg').style.display=S.funded?'block':'none';
+  const b=document.getElementById('hBadge');
+  if(S.backedUp||S.cloud){b.className='badge ok';b.textContent=t('h.ok');}
+  else{b.className='badge';b.textContent=t('h.nb');}
+  const sd=document.getElementById('secDesc');
+  sd.textContent=S.cloud?t('a.okc'):(S.backedUp?t('a.okl'):t('a.nb'));
+  document.getElementById('cloudSw').className='sw'+(S.cloud?' on':'');
+  document.getElementById('cloudDesc').textContent=S.cloud?t('sec.cloudOn'):t('sec.cloudOff');
+  document.getElementById('chgPwdRow').style.opacity=S.cloud?1:.4;
+  document.getElementById('lockDesc').textContent=S.lock==='bio'?t('sec.faceid'):(S.lock==='pin'?t('sec.pin'):'—');
+  if(S.lock)document.getElementById('doneLock').textContent=t(S.lock==='bio'?'d.lock1':'d.lock2');
+  document.getElementById('doneLock').style.display=S.lock?'inline-flex':'none';
+  document.getElementById('doneBk').style.display=(!S.backedUp&&!S.cloud)?'flex':'none';
+  document.getElementById('hEmpty').style.display=S.funded?'none':'flex';
+}
+function toggleCloud(){
+  if(S.cloud){
+    S.cloud=false;if(S.wallets.length)curW().cloud=false;
+    toast(t('t.cloudOff'));log('关闭云端备份');syncState();return;
+  }
+  startBackup('cloud');
+}
+function viewPhrase(){openSheet('sheetPhrase');}
+function tryLogout(){
+  const body=document.getElementById('slBody');
+  const p=document.getElementById('slPrimary');
+  if(S.cloud||S.backedUp){
+    body.innerHTML=t('sl.b2');p.textContent=t('sl.go2');p.onclick=logoutNow;
+    document.querySelector('#sheetLogout .btn.ghost').style.display='none';
+  }else{
+    body.innerHTML=t('sl.b1');p.innerHTML=t('sl.go1');p.onclick=function(){closeSheetGo('warn');};
+    document.querySelector('#sheetLogout .btn.ghost').style.display='flex';
+  }
+  openSheet('sheetLogout');
+}
+function logoutNow(){
+  closeSheet();
+  log('已退出登录');
+  S.warnOk=false;S.revealed=false;S.vi=0;S.wallets=[];S.cw=0;S.mnemonic=[];S.lock=null;
+  document.getElementById('warnCb').className='cb sq';
+  document.getElementById('warnNext').disabled=true;
+  reset('login');
+}
+
+/* init */
+setLang('zh');
+renderAssets();
+syncState();
+log('login');
+</script>
+</body>
+</html>
