@@ -297,7 +297,11 @@ textarea.field{height:150px;resize:none;line-height:1.6}
 .private-key-network span{display:block;margin-top:5px;font-size:13px;color:var(--sub);line-height:1.4}
 .private-key-card{margin-top:26px;background:var(--card);border-radius:22px;padding:18px}
 .private-key-label{font-size:13px;font-weight:700;color:var(--sub)}
-.private-key-value{margin-top:12px;border:1px solid var(--line);border-radius:16px;background:var(--soft);padding:16px;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);word-break:break-all}
+.private-key-value{position:relative;margin-top:12px;border:1px solid var(--line);border-radius:16px;background:var(--soft);padding:16px;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);word-break:break-all;min-height:74px}
+.private-key-secret{display:block}
+.private-key-reveal{position:absolute;inset:0;border:0;border-radius:16px;background:rgba(247,248,252,.82);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;color:var(--primary);font:700 14px/1.2 inherit;cursor:pointer}
+.private-key-reveal::before{content:'◉';margin-right:8px;font-size:18px;line-height:1}
+.private-key-reveal.hide{display:none}
 .private-key-note{margin:14px 0 0;font-size:13px;line-height:1.6;color:var(--sub)}
 .private-key-copy{margin-top:22px}
 .rename-label{font-size:14px;font-weight:700;margin-top:28px;display:block}
@@ -821,11 +825,11 @@ svg{display:block}
     </div>
     <div class="private-key-card">
       <div class="private-key-label" data-t="pk.value">私钥</div>
-      <div class="private-key-value" id="pkValue"></div>
+      <div class="private-key-value" id="pkValue"><span class="private-key-secret" id="pkSecret"></span><button type="button" class="private-key-reveal" id="pkReveal" onclick="revealPrivateKey()" data-t="pk.reveal">点击显示私钥</button></div>
     </div>
     <p class="private-key-note" data-t="pk.note">私钥可完全控制钱包资产。请勿分享给任何人，复制后请及时清除剪贴板。</p>
     <div class="spacer"></div>
-    <button type="button" class="btn private-key-copy" onclick="copyPrivateKey()" data-t="pk.copy">完整复制</button>
+    <button type="button" class="btn private-key-copy" id="pkCopyBtn" onclick="copyPrivateKey()" disabled data-t="pk.copy">复制</button>
   </section>
 
   <!-- ============ 修改钱包名称 ============ -->
@@ -1055,7 +1059,7 @@ const I18N = {
   "mg.rename":"重命名","mg.view":"查看助记词","mg.viewpk":"查看私钥","mg.del":"移除钱包",
   "mg.last":"至少要保留一个钱包","mg.nobk":"这个钱包还没备份，移除后无法找回。请先备份助记词。","mg.done":"钱包已移除",
   "wd.t":"钱包详情","wd.address":"账户地址","wd.addressSub":"查看各链地址","wd.rename":"修改钱包名称","wd.backupPhrase":"备份助记词","wd.backupPhraseSub":"抄写并验证助记词","wd.phrase":"查看助记词","wd.phraseSub":"通过设备验证后查看","wd.backupPk":"备份私钥","wd.backupPkSub":"查看并复制私钥",
-  "pk.t":"备份私钥","pk.network":"EVM 网络","pk.networkSub":"支持 Ethereum、BNB Chain","pk.value":"私钥","pk.note":"私钥可完全控制钱包资产。请勿分享给任何人，复制后请及时清除剪贴板。","pk.copy":"完整复制","pk.copied":"私钥已复制到剪贴板",
+  "pk.t":"备份私钥","pk.network":"EVM 网络","pk.networkSub":"支持 Ethereum、BNB Chain","pk.value":"私钥","pk.note":"私钥可完全控制钱包资产。请勿分享给任何人，复制后请及时清除剪贴板。","pk.reveal":"点击显示私钥","pk.copy":"复制",
   "wd.cloud":"云端备份","wd.cloudSubOff":"启用后可跨设备恢复","wd.cloudSubOn":"已加密备份，可跨设备恢复","wd.cloudSubUnrestored":"恢复钱包后可管理云端备份","wd.cloudStateOff":"未备份","wd.cloudStateOn":"✓ 已备份","wd.restore":"恢复钱包","wd.restoreCloud":"输入备份密码恢复","wd.restoreLocal":"通过助记词或私钥恢复",
   "wd.unbacked":"未备份","wd.unrestored":"未恢复","wd.backed":"已备份","wd.clouded":"云端已备份","wd.remove":"删除钱包","wd.recovered":"钱包已恢复",
   "wa.t":"账户地址","wa.s":"选择网络，查看或复制对应地址。","wa.copy":"复制","wa.copied":"已复制 {n} 地址",
@@ -1146,7 +1150,7 @@ const I18N = {
   "mg.rename":"Rename","mg.view":"View recovery phrase","mg.viewpk":"View private key","mg.del":"Remove wallet",
   "mg.last":"Keep at least one wallet","mg.nobk":"This wallet isn't backed up. Remove it and it's gone for good — back up the recovery phrase first.","mg.done":"Wallet removed",
   "wd.t":"Wallet details","wd.address":"Account addresses","wd.addressSub":"View addresses by network","wd.rename":"Rename wallet","wd.backupPhrase":"Back up recovery phrase","wd.backupPhraseSub":"Write down and verify your phrase","wd.phrase":"View recovery phrase","wd.phraseSub":"Authenticate on this device to view","wd.backupPk":"Back up private key","wd.backupPkSub":"View and copy your private key",
-  "pk.t":"Back up private key","pk.network":"EVM network","pk.networkSub":"Supports Ethereum and BNB Chain","pk.value":"Private key","pk.note":"A private key gives full control of this wallet. Never share it with anyone and clear your clipboard after copying.","pk.copy":"Copy full private key","pk.copied":"Private key copied to clipboard",
+  "pk.t":"Back up private key","pk.network":"EVM network","pk.networkSub":"Supports Ethereum and BNB Chain","pk.value":"Private key","pk.note":"A private key gives full control of this wallet. Never share it with anyone and clear your clipboard after copying.","pk.reveal":"Tap to reveal private key","pk.copy":"Copy",
   "wd.cloud":"Cloud backup","wd.cloudSubOff":"Enable it to recover on another device","wd.cloudSubOn":"Encrypted backup complete — ready for recovery on another device","wd.cloudSubUnrestored":"Restore this wallet to manage its cloud backup","wd.cloudStateOff":"Not backed up","wd.cloudStateOn":"✓ Backed up","wd.restore":"Restore wallet","wd.restoreCloud":"Restore with backup password","wd.restoreLocal":"Restore with phrase or private key",
   "wd.unbacked":"Not backed up","wd.unrestored":"Not restored","wd.backed":"Backed up","wd.clouded":"Cloud backup on","wd.remove":"Delete wallet","wd.recovered":"Wallet restored",
   "wa.t":"Account addresses","wa.s":"Choose a network to view or copy its address.","wa.copy":"Copy","wa.copied":"{n} address copied",
@@ -1219,7 +1223,7 @@ const S={scenario:'new',agree:true,warnOk:false,revealed:false,mnemonic:[],vq:[]
   impTab:'m',cloud:false,backedUp:false,funded:false,attempts:5,locked:false,email:'ares@gmail.com',via:'Google',
   hasBio:true,lock:null,pin:'',pin1:'',pinStage:1,pinMode:'set',unlockPurpose:null,doneMsg:'',relock:false,impWay:null,
   wallets:[],cw:0,newType:null,mg:0,backupOnly:false,backupGate:false,nextAfterUnlock:null,recoveryTarget:null,
-  accountHasCloudBackup:false,importedPrivateKey:null,phraseViewOnly:false,cloudPasswordSet:false,cloudPassword:'',cloudPasswordMode:'set',lockUntil:0,lockTimer:null};
+  accountHasCloudBackup:false,importedPrivateKey:null,phraseViewOnly:false,privateKeyRevealed:false,cloudPasswordSet:false,cloudPassword:'',cloudPasswordMode:'set',lockUntil:0,lockTimer:null};
 let stack=['login'];
 
 function log(m){const l=document.getElementById('log');const d=document.createElement('div');d.textContent='› '+m;l.appendChild(d);l.scrollTop=l.scrollHeight;}
@@ -1267,7 +1271,7 @@ function scen(k){
   S.scenario=k;S.agree=true;S.warnOk=false;S.revealed=false;S.cloud=false;S.backedUp=false;
   S.funded=false;S.attempts=5;S.locked=false;S.lockUntil=0;S.vi=0;S.mnemonic=[];
   S.lock=null;S.relock=false;S.pin='';S.pin1='';S.pinStage=1;S.pinMode='set';S.unlockPurpose=null;S.wallets=[];S.cw=0;S.newType=null;S.backupOnly=false;
-  S.backupGate=false;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;S.recoveryTarget=null;S.importedPrivateKey=null;S.phraseViewOnly=false;S.cloudPasswordSet=false;S.cloudPassword='';S.cloudPasswordMode='set';
+  S.backupGate=false;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;S.recoveryTarget=null;S.importedPrivateKey=null;S.phraseViewOnly=false;S.privateKeyRevealed=false;S.cloudPasswordSet=false;S.cloudPassword='';S.cloudPasswordMode='set';
   document.getElementById('rBtn').disabled=false;
   impTab('m');
   document.getElementById('agreeCb').className='cb on';
@@ -1720,10 +1724,16 @@ function verifyAndCreateWallet(){
 }
 function createAdditionalWallet(){
   S.newType='social';S.funded=false;S.backedUp=false;S.cloud=false;S.backupOnly=false;S.backupGate=false;
-  S.mnemonic=[];genSilent();addWallet('social',0);
-  S.backupGate=true;
-  renderAssets();syncState();tab('home');
-  log('设备验证通过 → 新钱包已生成，状态：未备份 → 引导备份');toast(t('add.created'));
+  S.mnemonic=[];
+  go('generating');
+  log('设备验证通过 → 正在创建新钱包');
+  setTimeout(function(){
+    if(cur()!=='generating')return;
+    genSilent();addWallet('social',0);
+    S.backupGate=true;
+    renderAssets();syncState();tab('home');
+    log('新钱包已生成，状态：未备份 → 引导备份');toast(t('add.created'));
+  },1500);
 }
 function badPin(msg){
   const dots=document.getElementById('pinDots');
@@ -2032,13 +2042,24 @@ function viewManagedPhrase(){
 }
 function renderPrivateKey(){
   const wl=managedW();if(!wl||wl.type!=='pk')return;
-  document.getElementById('pkValue').textContent=wl.privateKey||DEMO_PK;
+  S.privateKeyRevealed=false;
+  document.getElementById('pkSecret').textContent=wl.privateKey||DEMO_PK;
+  document.getElementById('pkReveal').classList.remove('hide');
+  document.getElementById('pkCopyBtn').disabled=true;
+}
+function revealPrivateKey(){
+  const wl=managedW();if(!wl||wl.type!=='pk')return;
+  S.privateKeyRevealed=true;
+  document.getElementById('pkReveal').classList.add('hide');
+  document.getElementById('pkCopyBtn').disabled=false;
 }
 function copyPrivateKey(){
-  const wl=managedW();if(!wl||wl.type!=='pk')return;
+  const wl=managedW();if(!wl||wl.type!=='pk'||!S.privateKeyRevealed)return;
   const value=wl.privateKey||DEMO_PK;
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(value).catch(function(){});
-  toast(t('pk.copied'));
+  const b=document.getElementById('pkCopyBtn');b.textContent=t('m.copied');
+  toast(t('t.copied'));
+  setTimeout(function(){b.textContent=t('pk.copy');},2200);
 }
 function startManagedCloudBackup(){
   const wl=managedW();if(!wl)return;
@@ -2212,7 +2233,7 @@ function logoutNow(){
   if(S.lockTimer)clearInterval(S.lockTimer);
   log('已退出登录');
   S.warnOk=false;S.revealed=false;S.vi=0;S.wallets=[];S.cw=0;S.mnemonic=[];S.lock=null;S.pinMode='set';S.unlockPurpose=null;S.backupGate=false;
-  S.locked=false;S.lockUntil=0;S.lockTimer=null;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;S.cloudPasswordSet=false;S.cloudPassword='';S.cloudPasswordMode='set';
+  S.locked=false;S.lockUntil=0;S.lockTimer=null;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;S.privateKeyRevealed=false;S.cloudPasswordSet=false;S.cloudPassword='';S.cloudPasswordMode='set';
   document.getElementById('warnCb').className='cb sq';
   document.getElementById('warnNext').disabled=true;
   reset('login');
