@@ -278,7 +278,10 @@ textarea.field{height:150px;resize:none;line-height:1.6}
 .wallet-detail-list .li .item-icon{width:30px;height:30px;border-radius:10px;background:var(--soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
 .wallet-detail-list .li.danger{color:var(--red)}
 .wallet-detail-list .li.danger .item-icon{background:var(--red-bg);color:var(--red)}
-.detail-delete{height:54px;border:0;border-radius:27px;background:var(--red-bg);color:var(--red);font:700 16px inherit;cursor:pointer;margin-top:22px;width:100%}
+.cloud-status{margin-left:auto;flex:0 0 auto;font-size:13px;font-weight:700;line-height:1;white-space:nowrap;color:var(--sub)}
+.cloud-status.on{color:#0E9C63}
+.wallet-detail-list .li.cloud-complete{cursor:default}
+.detail-delete{height:54px;border:0;border-radius:27px;background:var(--red-bg);color:var(--red);font:700 16px inherit;cursor:pointer;margin-top:22px;width:100%;padding:0;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .address-note{font-size:13px;color:var(--sub);line-height:1.55;margin:8px 0 0}
 .address-list{margin-top:18px;background:var(--card);border-radius:22px;overflow:hidden}
 .address-row{display:flex;align-items:center;gap:12px;padding:15px 16px;border-bottom:1px solid var(--line)}
@@ -288,6 +291,15 @@ textarea.field{height:150px;resize:none;line-height:1.6}
 .address-row .address-copy b{font-size:15px;display:block}
 .address-row .address-copy span{display:block;margin-top:4px;font:12px ui-monospace,Menlo,monospace;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .copy-address{border:0;background:var(--soft);color:var(--primary);border-radius:15px;padding:8px 11px;font:700 12px inherit;cursor:pointer}
+.private-key-network{display:flex;align-items:center;gap:14px;margin-top:28px}
+.private-key-network img{width:54px;height:54px;border-radius:50%;object-fit:cover;flex:0 0 54px}
+.private-key-network b{display:block;font-size:19px;line-height:1.25}
+.private-key-network span{display:block;margin-top:5px;font-size:13px;color:var(--sub);line-height:1.4}
+.private-key-card{margin-top:26px;background:var(--card);border-radius:22px;padding:18px}
+.private-key-label{font-size:13px;font-weight:700;color:var(--sub)}
+.private-key-value{margin-top:12px;border:1px solid var(--line);border-radius:16px;background:var(--soft);padding:16px;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);word-break:break-all}
+.private-key-note{margin:14px 0 0;font-size:13px;line-height:1.6;color:var(--sub)}
+.private-key-copy{margin-top:22px}
 .rename-label{font-size:14px;font-weight:700;margin-top:28px;display:block}
 .rename-screen .hint{margin-top:10px}
 .toast{position:absolute;left:24px;right:24px;bottom:110px;background:rgba(11,20,55,.94);color:#fff;padding:13px 16px;
@@ -491,7 +503,7 @@ svg{display:block}
     <div class="wtools"><button class="chip" id="copyBtn" onclick="copyWords()"><span data-t="m.copy">复制</span></button></div>
     <div class="warn"><span>⚠︎</span><span data-t="m.warn">截图会同步到云相册，木马可以读取。请手写在纸上。</span></div>
     <div class="spacer"></div>
-    <button class="btn" id="mnNext" disabled onclick="startVerify()" data-t="m.done">我已抄写</button>
+    <button class="btn" id="mnNext" disabled onclick="mnemonicNext()" data-t="m.done">我已抄写</button>
   </section>
 
   <!-- ============ 8. 验证助记词 ============ -->
@@ -509,17 +521,18 @@ svg{display:block}
   <!-- ============ 9. 设置备份密码 ============ -->
   <section class="screen" id="pwd">
     <div class="nav"><div class="back" onclick="back()">‹</div></div>
-    <h2 class="t" data-t="p.t">设置备份密码</h2>
-    <p class="s" data-t="p.s">这个密码用于加密你的助记词备份。密码不可重置，忘记后只能用助记词重新导入钱包。</p>
+    <h2 class="t" id="pwdTitle" data-t="p.t">设置备份密码</h2>
+    <p class="s" id="pwdSub" data-t="p.s">这个密码用于加密你的助记词备份。密码不可重置，忘记后只能用助记词重新导入钱包。</p>
     <input class="field" id="p1" type="password" placeholder="8–20 位，含大小写字母和数字" oninput="checkPwd()">
     <input class="field" id="p2" type="password" placeholder="再次输入密码" oninput="checkPwd()">
-    <div class="rules">
+    <div class="rules" id="pwdRules">
       <div id="r1"><i>○</i><span data-t="p.r1">长度 8–20 位</span></div>
       <div id="r2"><i>○</i><span data-t="p.r2">同时包含大写字母、小写字母和数字</span></div>
       <div id="r3"><i>○</i><span data-t="p.r3">两次输入一致</span></div>
     </div>
+    <div class="err-msg" id="pwdErr"></div>
     <div class="spacer"></div>
-    <button class="btn" id="pwdNext" disabled onclick="encrypt()" data-t="p.go">加密并备份</button>
+    <button class="btn" id="pwdNext" disabled onclick="submitCloudPassword()" data-t="p.go">加密并备份</button>
   </section>
 
   <!-- ============ 10. 加密中 ============ -->
@@ -743,7 +756,7 @@ svg{display:block}
         <div class="col"><span data-t="sec.lock">解锁方式</span><span class="desc" id="lockDesc">Face ID</span></div><span class="ar">›</span>
       </div>
       <div class="li" id="chgPwdRow" onclick="toast(t('h.soon'))"><span data-t="sec.pwd">修改备份密码</span><span class="ar">›</span></div>
-      <div class="li" onclick="viewPhrase()"><span data-t="sec.view">查看助记词</span><span class="ar">›</span></div>
+      <div class="li" id="secPhraseRow" onclick="viewPhrase()"><span data-t="sec.view">查看助记词</span><span class="ar">›</span></div>
       <div class="li" onclick="toast(t('h.soon'))"><span data-t="sec.dev">设备管理</span><span class="ar">›</span></div>
     </div>
     <div class="hint" data-t="sec.note">备份密码不可重置。我们只保存密文，忘记密码后需用助记词重新导入。</div>
@@ -778,7 +791,7 @@ svg{display:block}
         <span class="item-icon">◫</span><div class="col"><span id="wdPhraseText" data-t="wd.phrase">查看助记词</span><span class="desc" id="wdPhraseSub"></span></div><span class="ar">›</span>
       </div>
       <div class="li" id="wdCloudRow" onclick="startManagedCloudBackup()" style="display:none">
-        <span class="item-icon">☁</span><div class="col"><span data-t="wd.cloud">云端备份</span><span class="desc" data-t="wd.cloudSub">加密备份，可跨设备恢复</span></div><span class="ar">›</span>
+        <span class="item-icon">☁</span><div class="col"><span data-t="wd.cloud">云端备份</span><span class="desc" id="wdCloudSub">启用后可跨设备恢复</span></div><span class="cloud-status" id="wdCloudState">未备份</span><span class="ar" id="wdCloudArrow">›</span>
       </div>
     </div>
     <button type="button" class="detail-delete" id="wdDeleteBtn" onclick="removeWallet()" data-t="wd.remove">删除钱包</button>
@@ -793,6 +806,26 @@ svg{display:block}
     </div>
     <p class="address-note" data-t="wa.s">选择网络，查看或复制对应地址。</p>
     <div class="address-list" id="networkAddressList"></div>
+  </section>
+
+  <!-- ============ 私钥备份 ============ -->
+  <section class="screen" id="private-key" style="padding-bottom:42px">
+    <div class="nav detail-nav">
+      <div class="back" onclick="back()">‹</div>
+      <h2 data-t="pk.t">备份私钥</h2>
+      <div class="nav-blank"></div>
+    </div>
+    <div class="private-key-network">
+      <img src="assets/keywa-evm-network.png" alt="" aria-hidden="true">
+      <div><b data-t="pk.network">EVM 网络</b><span data-t="pk.networkSub">支持 Ethereum、BNB Chain</span></div>
+    </div>
+    <div class="private-key-card">
+      <div class="private-key-label" data-t="pk.value">私钥</div>
+      <div class="private-key-value" id="pkValue"></div>
+    </div>
+    <p class="private-key-note" data-t="pk.note">私钥可完全控制钱包资产。请勿分享给任何人，复制后请及时清除剪贴板。</p>
+    <div class="spacer"></div>
+    <button type="button" class="btn private-key-copy" onclick="copyPrivateKey()" data-t="pk.copy">完整复制</button>
   </section>
 
   <!-- ============ 修改钱包名称 ============ -->
@@ -980,9 +1013,10 @@ const I18N = {
   "w.1":"任何人拿到助记词，都能转走你的全部资产。","w.2":"我们和任何客服都不会向你索要助记词。",
   "w.3":"助记词丢失，资产永久无法找回，也无法重置。","w.ck":"我已理解，并会离线抄写保存","w.skip":"暂时跳过，先进钱包","r.ph":"备份密码",
   "m.t":"你的助记词","m.s":"按顺序抄写这 12 个单词并离线保存。","m.reveal":"点击显示","m.copy":"复制","m.copied":"已复制",
-  "m.warn":"截图会同步到云相册，木马可以读取。请手写在纸上。","m.done":"我已抄写",
+  "m.warn":"截图会同步到云相册，木马可以读取。请手写在纸上。","m.done":"我已抄写","m.finish":"完成",
   "v.t":"验证助记词","v.s":"请根据数字顺序选择正确的单词，以确认你已备份助记词。","v.pos":"第 {n} 个","v.err":"选择的助记词不正确，请检查后重新选择。","v.go":"确认",
-  "p.t":"设置备份密码","p.s":"这个密码用于加密你的助记词备份。密码不可重置，忘记后只能用助记词重新导入钱包。",
+  "p.t":"设置云端备份密码","p.s":"首次开启云端备份时设置。该账号下的所有钱包共用此密码，密码不可重置。",
+  "p.verifyT":"验证云端备份密码","p.verifyS":"输入该账号此前设置的云端备份密码，验证通过后即可备份此钱包。","p.verifyGo":"验证并备份","p.verifyErr":"备份密码不正确，请重新输入",
   "p.ph1":"8–20 位，含大小写字母和数字","p.ph2":"再次输入密码",
   "p.r1":"长度 8–20 位","p.r2":"同时包含大写字母、小写字母和数字","p.r3":"两次输入一致","p.go":"加密并备份",
   "e.t":"正在备份","e.s":"请勿关闭 App","e.1":"校验密码强度","e.2":"通过加密通道上传","e.3":"以备份密码加密后，服务端仅存密文","e.4":"备份完成",
@@ -991,6 +1025,7 @@ const I18N = {
   "i.hint":"Demo：随便输入几个词可看词数／词库校验失败；私钥页输入 0x123 可看格式错误。",
   "i.e1":"助记词应为 12、18 或 24 个单词，当前 {n} 个","i.e2":"第 {i} 个单词不在词库中：{w}",
   "i.e3":"校验和不通过，请检查单词顺序是否抄错","i.e4":"私钥格式不正确，应为 0x 开头的 64 位十六进制","i.e5":"请先输入助记词或私钥",
+  "i.importedPhrase":"钱包已导入。助记词已由你保管，可随时在钱包详情中查看。","i.importedPk":"钱包已导入。私钥已由你保管，可随时在钱包详情中查看并复制。",
   "f.t":"钱包尚未恢复","f.s":"此社交账号存在钱包，但当前设备没有本地钱包数据。","f.date":"检测到云端加密备份",
   "f.go":"用密码恢复","f.alt":"导入助记词或私钥","f.nt":"未找到云端备份","f.ns":"此钱包未做云端备份。请使用你保管的助记词或私钥恢复。","f.nm":"当前账号无云端加密备份",
   "rec.t":"选择恢复方式","rec.s":"请选择要恢复此钱包的方式。","rec.cloud":"恢复云端备份","rec.cloudSub":"输入上一个设备设置的备份密码","rec.cloudOff":"该钱包未检测到云端加密备份","rec.local":"助记词或私钥恢复","rec.localSub":"输入你自行保存的助记词或私钥",
@@ -1019,8 +1054,9 @@ const I18N = {
   "del.t":"确认删除钱包？","del.b":"删除后将清除本机钱包数据。请验证身份后继续。","del.bUnbacked":"该钱包尚未手动备份助记词。删除后，本机钱包数据将无法找回。请验证身份后继续。","del.cloudT":"请先手动备份助记词","del.cloudB":"当前钱包仅有云端备份。完成手动备份助记词后，方可删除钱包。","del.auth":"验证并删除","del.backup":"去备份助记词",
   "mg.rename":"重命名","mg.view":"查看助记词","mg.viewpk":"查看私钥","mg.del":"移除钱包",
   "mg.last":"至少要保留一个钱包","mg.nobk":"这个钱包还没备份，移除后无法找回。请先备份助记词。","mg.done":"钱包已移除",
-  "wd.t":"钱包详情","wd.address":"账户地址","wd.addressSub":"查看各链地址","wd.rename":"修改钱包名称","wd.backupPhrase":"备份助记词","wd.backupPhraseSub":"抄写并验证助记词","wd.phrase":"查看助记词","wd.phraseSub":"通过设备验证后查看","wd.viewpk":"查看私钥","wd.viewpkSub":"通过设备验证后查看",
-  "wd.cloud":"云端备份","wd.cloudSub":"加密备份，可跨设备恢复","wd.restore":"恢复钱包","wd.restoreCloud":"输入备份密码恢复","wd.restoreLocal":"通过助记词或私钥恢复",
+  "wd.t":"钱包详情","wd.address":"账户地址","wd.addressSub":"查看各链地址","wd.rename":"修改钱包名称","wd.backupPhrase":"备份助记词","wd.backupPhraseSub":"抄写并验证助记词","wd.phrase":"查看助记词","wd.phraseSub":"通过设备验证后查看","wd.backupPk":"备份私钥","wd.backupPkSub":"查看并复制私钥",
+  "pk.t":"备份私钥","pk.network":"EVM 网络","pk.networkSub":"支持 Ethereum、BNB Chain","pk.value":"私钥","pk.note":"私钥可完全控制钱包资产。请勿分享给任何人，复制后请及时清除剪贴板。","pk.copy":"完整复制","pk.copied":"私钥已复制到剪贴板",
+  "wd.cloud":"云端备份","wd.cloudSubOff":"启用后可跨设备恢复","wd.cloudSubOn":"已加密备份，可跨设备恢复","wd.cloudSubUnrestored":"恢复钱包后可管理云端备份","wd.cloudStateOff":"未备份","wd.cloudStateOn":"✓ 已备份","wd.restore":"恢复钱包","wd.restoreCloud":"输入备份密码恢复","wd.restoreLocal":"通过助记词或私钥恢复",
   "wd.unbacked":"未备份","wd.unrestored":"未恢复","wd.backed":"已备份","wd.clouded":"云端已备份","wd.remove":"删除钱包","wd.recovered":"钱包已恢复",
   "wa.t":"账户地址","wa.s":"选择网络，查看或复制对应地址。","wa.copy":"复制","wa.copied":"已复制 {n} 地址",
   "rn.t":"修改钱包名称","rn.label":"钱包名称","rn.ph":"输入钱包名称","rn.s":"名称仅在当前应用内展示。","rn.save":"保存","rn.err":"请输入 1–24 个字符",
@@ -1068,9 +1104,10 @@ const I18N = {
   "w.1":"Anyone who has your recovery phrase can move all your assets.","w.2":"We will never ask you for your recovery phrase.",
   "w.3":"If you lose it, your assets are gone for good. It cannot be reset.","w.ck":"I understand and will write it down offline","w.skip":"Skip for now","r.ph":"Backup password",
   "m.t":"Your recovery phrase","m.s":"Write these 12 words down in order and keep them offline.","m.reveal":"Tap to reveal","m.copy":"Copy","m.copied":"Copied",
-  "m.warn":"Screenshots sync to your cloud photo library, where malware can read them. Write it on paper.","m.done":"I've written it down",
+  "m.warn":"Screenshots sync to your cloud photo library, where malware can read them. Write it on paper.","m.done":"I've written it down","m.finish":"Done",
   "v.t":"Confirm your recovery phrase","v.s":"Select the right words in number order to confirm you backed up your recovery phrase.","v.pos":"Word #{n}","v.err":"The selected words aren't correct. Check your written copy and try again.","v.go":"Confirm",
-  "p.t":"Set a backup password","p.s":"This password encrypts your recovery phrase backup. It can't be reset — if you forget it, you'll need your recovery phrase to import the wallet again.",
+  "p.t":"Set a cloud backup password","p.s":"Set it when you first enable cloud backup. Every wallet under this account shares this password, and it can't be reset.",
+  "p.verifyT":"Verify cloud backup password","p.verifyS":"Enter the cloud backup password already set for this account to back up this wallet.","p.verifyGo":"Verify and back up","p.verifyErr":"Incorrect backup password. Try again.",
   "p.ph1":"8–20 characters with upper/lowercase letters and a number","p.ph2":"Re-enter password",
   "p.r1":"8–20 characters","p.r2":"Includes uppercase, lowercase, and a number","p.r3":"Both entries match","p.go":"Encrypt and back up",
   "e.t":"Backing up","e.s":"Keep the app open","e.1":"Checking password strength","e.2":"Uploading over an encrypted channel","e.3":"Encrypting with your password; the server stores ciphertext only","e.4":"Backup complete",
@@ -1079,6 +1116,7 @@ const I18N = {
   "i.hint":"Demo: type a few random words to see word-count / word-list errors; enter 0x123 on the private key tab for a format error.",
   "i.e1":"A recovery phrase must be 12, 18, or 24 words. You entered {n}.","i.e2":"Word #{i} isn't in the word list: {w}",
   "i.e3":"Checksum failed. Check that the words are in the right order.","i.e4":"That private key isn't valid. It should be 0x followed by 64 hex characters.","i.e5":"Enter your recovery phrase or private key first",
+  "i.importedPhrase":"Wallet imported. You already hold the recovery phrase and can view it any time in Wallet details.","i.importedPk":"Wallet imported. You already hold the private key and can view or copy it any time in Wallet details.",
   "f.t":"Wallet not restored","f.s":"This social account has a wallet, but this device has no local wallet data.","f.date":"Encrypted cloud backup found",
   "f.go":"Restore with password","f.alt":"Import phrase or private key","f.nt":"No cloud backup found","f.ns":"This wallet was not backed up to the cloud. Restore it with the recovery phrase or private key you hold.","f.nm":"No encrypted cloud backup for this account",
   "rec.t":"Choose a recovery method","rec.s":"Choose how to restore this wallet.","rec.cloud":"Restore cloud backup","rec.cloudSub":"Enter the backup password set on your previous device","rec.cloudOff":"No encrypted cloud backup was found for this wallet","rec.local":"Restore with phrase or private key","rec.localSub":"Enter the recovery phrase or private key you saved",
@@ -1107,8 +1145,9 @@ const I18N = {
   "del.t":"Delete this wallet?","del.b":"This removes the wallet data from this device. Verify your identity to continue.","del.bUnbacked":"This wallet's recovery phrase has not been backed up manually. After deletion, its local wallet data cannot be recovered. Verify your identity to continue.","del.cloudT":"Back up your recovery phrase first","del.cloudB":"This wallet only has a cloud backup. Complete a manual recovery-phrase backup before deleting it.","del.auth":"Verify and delete","del.backup":"Back up recovery phrase",
   "mg.rename":"Rename","mg.view":"View recovery phrase","mg.viewpk":"View private key","mg.del":"Remove wallet",
   "mg.last":"Keep at least one wallet","mg.nobk":"This wallet isn't backed up. Remove it and it's gone for good — back up the recovery phrase first.","mg.done":"Wallet removed",
-  "wd.t":"Wallet details","wd.address":"Account addresses","wd.addressSub":"View addresses by network","wd.rename":"Rename wallet","wd.backupPhrase":"Back up recovery phrase","wd.backupPhraseSub":"Write down and verify your phrase","wd.phrase":"View recovery phrase","wd.phraseSub":"Authenticate on this device to view","wd.viewpk":"View private key","wd.viewpkSub":"Authenticate on this device to view",
-  "wd.cloud":"Cloud backup","wd.cloudSub":"Encrypted backup for recovery on another device","wd.restore":"Restore wallet","wd.restoreCloud":"Restore with backup password","wd.restoreLocal":"Restore with phrase or private key",
+  "wd.t":"Wallet details","wd.address":"Account addresses","wd.addressSub":"View addresses by network","wd.rename":"Rename wallet","wd.backupPhrase":"Back up recovery phrase","wd.backupPhraseSub":"Write down and verify your phrase","wd.phrase":"View recovery phrase","wd.phraseSub":"Authenticate on this device to view","wd.backupPk":"Back up private key","wd.backupPkSub":"View and copy your private key",
+  "pk.t":"Back up private key","pk.network":"EVM network","pk.networkSub":"Supports Ethereum and BNB Chain","pk.value":"Private key","pk.note":"A private key gives full control of this wallet. Never share it with anyone and clear your clipboard after copying.","pk.copy":"Copy full private key","pk.copied":"Private key copied to clipboard",
+  "wd.cloud":"Cloud backup","wd.cloudSubOff":"Enable it to recover on another device","wd.cloudSubOn":"Encrypted backup complete — ready for recovery on another device","wd.cloudSubUnrestored":"Restore this wallet to manage its cloud backup","wd.cloudStateOff":"Not backed up","wd.cloudStateOn":"✓ Backed up","wd.restore":"Restore wallet","wd.restoreCloud":"Restore with backup password","wd.restoreLocal":"Restore with phrase or private key",
   "wd.unbacked":"Not backed up","wd.unrestored":"Not restored","wd.backed":"Backed up","wd.clouded":"Cloud backup on","wd.remove":"Delete wallet","wd.recovered":"Wallet restored",
   "wa.t":"Account addresses","wa.s":"Choose a network to view or copy its address.","wa.copy":"Copy","wa.copied":"{n} address copied",
   "rn.t":"Rename wallet","rn.label":"Wallet name","rn.ph":"Enter a wallet name","rn.s":"This name is shown only in this app.","rn.save":"Save","rn.err":"Enter 1–24 characters",
@@ -1145,10 +1184,13 @@ function setLang(l){
   document.getElementById('impIn').placeholder=t(S.impTab==='m'?'i.phm':'i.phk');
   document.getElementById('renameInput').placeholder=t('rn.ph');
   document.getElementById('impAcc').textContent=t('i.cacc',{m:S.email});
+  if(cur()==='pwd')renderCloudPasswordForm();
   renderPin();
   if(S.wallets.length)renderWallets();
+  if(cur()==='mnemonic')renderMnemonicAction();
   if(cur()==='wallet-details')renderWalletDetails();
   if(cur()==='wallet-addresses')renderWalletAddresses();
+  if(cur()==='private-key')renderPrivateKey();
   if(S.via&&S.via!=='Email'){
     document.getElementById('authingT').innerHTML=t('au.t',{v:S.via});
     document.getElementById('afT').innerHTML=t('af.t',{v:S.via});
@@ -1177,7 +1219,7 @@ const S={scenario:'new',agree:true,warnOk:false,revealed:false,mnemonic:[],vq:[]
   impTab:'m',cloud:false,backedUp:false,funded:false,attempts:5,locked:false,email:'ares@gmail.com',via:'Google',
   hasBio:true,lock:null,pin:'',pin1:'',pinStage:1,pinMode:'set',unlockPurpose:null,doneMsg:'',relock:false,impWay:null,
   wallets:[],cw:0,newType:null,mg:0,backupOnly:false,backupGate:false,nextAfterUnlock:null,recoveryTarget:null,
-  accountHasCloudBackup:false,lockUntil:0,lockTimer:null};
+  accountHasCloudBackup:false,importedPrivateKey:null,phraseViewOnly:false,cloudPasswordSet:false,cloudPassword:'',cloudPasswordMode:'set',lockUntil:0,lockTimer:null};
 let stack=['login'];
 
 function log(m){const l=document.getElementById('log');const d=document.createElement('div');d.textContent='› '+m;l.appendChild(d);l.scrollTop=l.scrollHeight;}
@@ -1225,7 +1267,7 @@ function scen(k){
   S.scenario=k;S.agree=true;S.warnOk=false;S.revealed=false;S.cloud=false;S.backedUp=false;
   S.funded=false;S.attempts=5;S.locked=false;S.lockUntil=0;S.vi=0;S.mnemonic=[];
   S.lock=null;S.relock=false;S.pin='';S.pin1='';S.pinStage=1;S.pinMode='set';S.unlockPurpose=null;S.wallets=[];S.cw=0;S.newType=null;S.backupOnly=false;
-  S.backupGate=false;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;S.recoveryTarget=null;
+  S.backupGate=false;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;S.recoveryTarget=null;S.importedPrivateKey=null;S.phraseViewOnly=false;S.cloudPasswordSet=false;S.cloudPassword='';S.cloudPasswordMode='set';
   document.getElementById('rBtn').disabled=false;
   impTab('m');
   document.getElementById('agreeCb').className='cb on';
@@ -1295,7 +1337,7 @@ function afterAuth(){
 }
 
 function loadExistingWallet(){
-  S.funded=true;S.backedUp=true;S.cloud=true;S.lock=S.hasBio?'bio':'pin';S.wallets=[];
+  S.funded=true;S.backedUp=true;S.cloud=true;S.lock=S.hasBio?'bio':'pin';S.cloudPasswordSet=true;S.cloudPassword='Demo1234';S.wallets=[];
   addWallet('social',9870.06);
   /* 演示同一社交账号下的另一只钱包：服务端存在，但本机尚未恢复。 */
   S.wallets.push({type:'social',n:2,name:{zh:'Social Wallet',en:'Social Wallet'},bal:0,funded:false,
@@ -1305,7 +1347,7 @@ function loadExistingWallet(){
 }
 
 function loadUnrecoveredWallets(){
-  S.funded=false;S.backedUp=false;S.cloud=true;S.wallets=[
+  S.funded=false;S.backedUp=false;S.cloud=true;S.cloudPasswordSet=true;S.cloudPassword='Demo1234';S.wallets=[
     {type:'social',n:1,name:walletName('social',1),bal:0,funded:false,backedUp:false,cloud:true,addr:ADDRS[0],restored:false},
     {type:'social',n:2,name:walletName('social',2),bal:0,funded:false,backedUp:false,cloud:false,addr:ADDRS[1],restored:false}
   ];
@@ -1385,7 +1427,7 @@ function pickMode(m){
 }
 function modeNext(){
   genSilent();
-  if(S.cloud){S.newType='social';log('云端加密备份 → 设密码');go('pwd');return;}
+  if(S.cloud){S.newType='social';log('云端加密备份 → 处理账号级备份密码');openCloudPassword();return;}
   S.newType='mnemonic';S.backedUp=false;
   log('本地创建 → 直接设解锁方式，助记词留到首页引导备份');
   startUnlock(t('d.s3'));
@@ -1400,8 +1442,7 @@ function startBackup(kind){
   S.backupOnly=true;
   document.querySelectorAll('.mask').forEach(function(m){m.classList.remove('show');});
   if(kind==='cloud'){
-    document.getElementById('p1').value='';document.getElementById('p2').value='';checkPwd();
-    log('补备份：云端加密');go('pwd');return;
+    log('补备份：云端加密');openCloudPassword();return;
   }
   log('补备份：助记词 → 安全提示');
   openMnemonicSafety();
@@ -1427,7 +1468,14 @@ function genMnemonic(){
   S.revealed=false;box.classList.add('blur');
   document.getElementById('reveal').classList.remove('hide');
   document.getElementById('mnNext').disabled=true;
+  S.phraseViewOnly=!!(curW()&&curW().backedUp);
+  renderMnemonicAction();
   go('mnemonic');
+}
+function renderMnemonicAction(){
+  const btn=document.getElementById('mnNext');
+  const key=S.phraseViewOnly?'m.finish':'m.done';
+  btn.setAttribute('data-t',key);btn.textContent=t(key);
 }
 function revealWords(){
   S.revealed=true;
@@ -1435,6 +1483,15 @@ function revealWords(){
   document.getElementById('reveal').classList.add('hide');
   document.getElementById('mnNext').disabled=false;
   log('助记词已展示');
+}
+function mnemonicNext(){
+  if(!S.revealed)return;
+  if(S.phraseViewOnly){
+    S.phraseViewOnly=false;
+    back();
+    return;
+  }
+  startVerify();
 }
 function copyWords(){
   if(!S.revealed){revealWords();return;}
@@ -1504,8 +1561,29 @@ function markBackedUp(){
 }
 
 /* ================= 9 password ================= */
+function openCloudPassword(){
+  S.cloudPasswordMode=S.cloudPasswordSet?'verify':'set';
+  document.getElementById('p1').value='';document.getElementById('p2').value='';
+  clearErr('pwdErr','p1');
+  renderCloudPasswordForm();
+  go('pwd');
+}
+function renderCloudPasswordForm(){
+  const verifying=S.cloudPasswordMode==='verify';
+  document.getElementById('pwdTitle').textContent=t(verifying?'p.verifyT':'p.t');
+  document.getElementById('pwdSub').textContent=t(verifying?'p.verifyS':'p.s');
+  document.getElementById('p1').placeholder=t(verifying?'r.ph':'p.ph1');
+  document.getElementById('p2').style.display=verifying?'none':'block';
+  document.getElementById('pwdRules').style.display=verifying?'none':'block';
+  document.getElementById('pwdNext').textContent=t(verifying?'p.verifyGo':'p.go');
+  checkPwd();
+}
 function checkPwd(){
   const a=document.getElementById('p1').value,b=document.getElementById('p2').value;
+  if(S.cloudPasswordMode==='verify'){
+    document.getElementById('pwdNext').disabled=!a;
+    return;
+  }
   const r1=a.length>=8&&a.length<=20;
   const r2=/[a-z]/.test(a)&&/[A-Z]/.test(a)&&/[0-9]/.test(a);
   const r3=a.length>0&&a===b;
@@ -1514,6 +1592,15 @@ function checkPwd(){
     el.className=p[1]?'ok':'';el.querySelector('i').textContent=p[1]?'✓':'○';
   });
   document.getElementById('pwdNext').disabled=!(r1&&r2&&r3);
+}
+function submitCloudPassword(){
+  const input=document.getElementById('p1').value;
+  if(S.cloudPasswordMode==='verify'){
+    if(input!==S.cloudPassword){showErr('pwdErr','p1',t('p.verifyErr'));log('账号级云备份密码验证失败');return;}
+    clearErr('pwdErr','p1');log('账号级云备份密码验证通过');encrypt();return;
+  }
+  S.cloudPassword=input;S.cloudPasswordSet=true;
+  log('已设置账号级云备份密码');encrypt();
 }
 function encrypt(){
   go('enc');
@@ -1634,8 +1721,9 @@ function verifyAndCreateWallet(){
 function createAdditionalWallet(){
   S.newType='social';S.funded=false;S.backedUp=false;S.cloud=false;S.backupOnly=false;S.backupGate=false;
   S.mnemonic=[];genSilent();addWallet('social',0);
+  S.backupGate=true;
   renderAssets();syncState();tab('home');
-  log('设备验证通过 → 新钱包已生成，状态：未备份');toast(t('add.created'));
+  log('设备验证通过 → 新钱包已生成，状态：未备份 → 引导备份');toast(t('add.created'));
 }
 function badPin(msg){
   const dots=document.getElementById('pinDots');
@@ -1686,6 +1774,7 @@ function importWallet(){
   go('importing');
   setTimeout(function(){
     if(cur()!=='importing')return;
+    S.backupGate=false;
     addWallet(S.newType||'mnemonic',S.funded?9870.06:0);
     document.getElementById('doneSub').innerHTML=t('d.s');
     document.getElementById('doneLock').textContent=t('d.secure');
@@ -1737,6 +1826,7 @@ function doImport(){
   if(!raw){showErr('impErr','impIn',t('i.e5'));return;}
   if(S.impTab==='k'){
     if(!/^0x[0-9a-fA-F]{64}$/.test(raw)){showErr('impErr','impIn',t('i.e4'));log('私钥格式错误');return;}
+    S.importedPrivateKey=raw;
   }else{
     const ws=raw.toLowerCase().split(' ');
     if([12,18,24].indexOf(ws.length)<0){showErr('impErr','impIn',t('i.e1',{n:ws.length}));log('词数校验失败');return;}
@@ -1747,7 +1837,7 @@ function doImport(){
     if(ws.length===12&&ws.join(' ')!==DEMO12.join(' ')&&Math.random()<0){/* checksum hook */}
     S.mnemonic=ws.slice(0,12);
   }
-  S.backedUp=true;S.cloud=false;S.funded=true;
+  S.backedUp=true;S.cloud=false;S.funded=true;S.backupGate=false;
   if(S.recoveryTarget!==null){
     S.newType=S.impTab==='k'?'pk':'mnemonic';S.nextAfterUnlock='managedRestoreLocal';
     log('导入校验通过 → 设置本机应用级保护');
@@ -1755,9 +1845,7 @@ function doImport(){
     return;
   }
   S.newType=S.impTab==='k'?'pk':'mnemonic';S.nextAfterUnlock='import';log('导入校验通过');
-  startUnlock(LANG==='zh'
-    ? '钱包已导入。助记词保存在这台设备上，可在「安全与备份」开启云端加密备份。'
-    : 'Wallet imported. Your recovery phrase is stored on this device — you can turn on encrypted backup in Security & backup.');
+  startUnlock(t(S.impTab==='k'?'i.importedPk':'i.importedPhrase'));
 }
 
 /* ================= 13 restore ================= */
@@ -1765,7 +1853,8 @@ function doRestore(){
   if(S.locked){updateRestoreLock();return;}
   const v=document.getElementById('rp').value;
   if(!v){showErr('rErr','rp',t('r.e3'));return;}
-  if(v==='Demo1234'){
+  const expectedPassword=S.cloudPasswordSet?S.cloudPassword:'Demo1234';
+  if(v===expectedPassword){
     S.cloud=true;S.backedUp=false;S.funded=true;S.mnemonic=DEMO12.slice();S.newType='social';
     if(S.recoveryTarget!==null){
       S.nextAfterUnlock='managedRestoreCloud';
@@ -1815,7 +1904,7 @@ function walletName(type,n){
 function addWallet(type,bal){
   const n=S.wallets.length+1;
   S.wallets.push({type:type,n:n,name:walletName(type,n),bal:bal,funded:bal>0,
-    backedUp:S.backedUp,cloud:S.cloud,addr:ADDRS[(n-1)%4],restored:true});
+    backedUp:S.backedUp,cloud:S.cloud,addr:ADDRS[(n-1)%4],privateKey:type==='pk'?(S.importedPrivateKey||DEMO_PK):null,restored:true});
   S.cw=S.wallets.length-1;
   log('新增钱包：'+S.wallets[S.cw].name.zh);
 }
@@ -1893,9 +1982,20 @@ function renderWalletDetails(){
   document.getElementById('wdAddressRow').style.display=unrecovered?'none':'flex';
   document.getElementById('wdPhraseRow').style.display=!unrecovered?'flex':'none';
   const needsManualBackup=!wl.backedUp;
-  document.getElementById('wdPhraseText').textContent=t(wl.type==='pk'?'wd.viewpk':(needsManualBackup?'wd.backupPhrase':'wd.phrase'));
-  document.getElementById('wdPhraseSub').textContent=t(wl.type==='pk'?'wd.viewpkSub':(needsManualBackup?'wd.backupPhraseSub':'wd.phraseSub'));
-  document.getElementById('wdCloudRow').style.display=!unrecovered&&unbacked?'flex':'none';
+  document.getElementById('wdPhraseText').textContent=t(wl.type==='pk'?'wd.backupPk':(needsManualBackup?'wd.backupPhrase':'wd.phrase'));
+  document.getElementById('wdPhraseSub').textContent=t(wl.type==='pk'?'wd.backupPkSub':(needsManualBackup?'wd.backupPhraseSub':'wd.phraseSub'));
+  const cloudState=document.getElementById('wdCloudState');
+  const cloudBacked=!!wl.cloud;
+  cloudState.textContent=t(cloudBacked?'wd.cloudStateOn':'wd.cloudStateOff');
+  cloudState.className='cloud-status'+(cloudBacked?' on':'');
+  document.getElementById('wdCloudSub').textContent=t(unrecovered?'wd.cloudSubUnrestored':(cloudBacked?'wd.cloudSubOn':'wd.cloudSubOff'));
+  /* 始终保留云端备份行；未恢复的钱包点击后先进入恢复流程。 */
+  const cloudRow=document.getElementById('wdCloudRow');
+  cloudRow.style.display='flex';
+  cloudRow.classList.toggle('cloud-complete',cloudBacked);
+  cloudRow.style.pointerEvents=cloudBacked?'none':'auto';
+  cloudRow.setAttribute('aria-disabled',cloudBacked?'true':'false');
+  document.getElementById('wdCloudArrow').style.display=cloudBacked?'none':'block';
   document.getElementById('wdDeleteBtn').style.display=unrecovered?'none':'flex';
 }
 function openWalletAddresses(){renderWalletAddresses();go('wallet-addresses');}
@@ -1925,8 +2025,27 @@ function activateManagedWallet(){
   if(S.mg===S.cw)return;
   S.cw=S.mg;const wl=curW();S.funded=wl.funded;S.backedUp=wl.backedUp;S.cloud=wl.cloud;renderAssets();syncState();
 }
-function viewManagedPhrase(){activateManagedWallet();viewPhrase();}
-function startManagedCloudBackup(){activateManagedWallet();startBackup('cloud');}
+function viewManagedPhrase(){
+  activateManagedWallet();
+  if(curW().type==='pk'){renderPrivateKey();go('private-key');return;}
+  viewPhrase();
+}
+function renderPrivateKey(){
+  const wl=managedW();if(!wl||wl.type!=='pk')return;
+  document.getElementById('pkValue').textContent=wl.privateKey||DEMO_PK;
+}
+function copyPrivateKey(){
+  const wl=managedW();if(!wl||wl.type!=='pk')return;
+  const value=wl.privateKey||DEMO_PK;
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(value).catch(function(){});
+  toast(t('pk.copied'));
+}
+function startManagedCloudBackup(){
+  const wl=managedW();if(!wl)return;
+  if(wl.cloud)return;
+  if(isUnrecovered(wl)){openRecoverySheet(S.mg);return;}
+  activateManagedWallet();startBackup('cloud');
+}
 function recoverManagedWallet(){openRecoverySheet(S.mg);}
 function handleHomeStatusClick(){
   const wl=curW();if(!wl)return;
@@ -1952,7 +2071,7 @@ function restoreFromPhrase(){
 function completeManagedRecovery(type,cloud){
   const index=S.recoveryTarget,wl=S.wallets[index];
   if(!wl){S.recoveryTarget=null;return;}
-  wl.type=type;wl.restored=true;wl.cloud=cloud;wl.backedUp=!cloud;wl.funded=true;wl.bal=9870.06;
+  wl.type=type;wl.privateKey=type==='pk'?(S.importedPrivateKey||DEMO_PK):null;wl.restored=true;wl.cloud=cloud;wl.backedUp=!cloud;wl.funded=true;wl.bal=9870.06;
   S.cw=index;S.funded=true;S.backedUp=!cloud;S.cloud=cloud;S.recoveryTarget=null;
   renderAssets();renderWallets();syncState();stack=['home'];show('home');
   log('钱包恢复成功');toast(t('wd.recovered'));
@@ -2058,6 +2177,7 @@ function syncState(){
   document.getElementById('cloudSw').className='sw'+(S.cloud?' on':'');
   document.getElementById('cloudDesc').textContent=S.cloud?t('sec.cloudOn'):t('sec.cloudOff');
   document.getElementById('chgPwdRow').style.opacity=S.cloud?1:.4;
+  document.getElementById('secPhraseRow').style.display=wl&&wl.type==='pk'?'none':'flex';
   document.getElementById('lockDesc').textContent=S.lock==='bio'?t('sec.faceid'):(S.lock==='pin'?t('sec.pin'):'—');
   document.getElementById('doneLock').textContent=t('d.secure');
   document.getElementById('doneLock').style.display='inline-flex';
@@ -2070,7 +2190,11 @@ function toggleCloud(){
   }
   startBackup('cloud');
 }
-function viewPhrase(){openSheet('sheetPhrase');}
+function viewPhrase(){
+  const wl=curW();
+  if(wl&&wl.type==='pk'){S.mg=S.cw;renderPrivateKey();go('private-key');return;}
+  openSheet('sheetPhrase');
+}
 function tryLogout(){
   const body=document.getElementById('slBody');
   const p=document.getElementById('slPrimary');
@@ -2088,7 +2212,7 @@ function logoutNow(){
   if(S.lockTimer)clearInterval(S.lockTimer);
   log('已退出登录');
   S.warnOk=false;S.revealed=false;S.vi=0;S.wallets=[];S.cw=0;S.mnemonic=[];S.lock=null;S.pinMode='set';S.unlockPurpose=null;S.backupGate=false;
-  S.locked=false;S.lockUntil=0;S.lockTimer=null;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;
+  S.locked=false;S.lockUntil=0;S.lockTimer=null;S.nextAfterUnlock=null;S.accountHasCloudBackup=false;S.cloudPasswordSet=false;S.cloudPassword='';S.cloudPasswordMode='set';
   document.getElementById('warnCb').className='cb sq';
   document.getElementById('warnNext').disabled=true;
   reset('login');
