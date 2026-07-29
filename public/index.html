@@ -1962,7 +1962,7 @@ function renderWallets(){
     el.className='witem'+(i===S.cw?' on':'');
     el.innerHTML='<div class="ic">'+(wl.n||i+1)+'</div>'+
       '<div class="info"><div class="nm"><span class="wnm">'+(LANG==='zh'?wl.name.zh:wl.name.en)+'</span>'+
-      '<span class="wtag">'+tagOf(wl.type)+'</span>'+
+      (wl.type==='social'?'':'<span class="wtag">'+tagOf(wl.type)+'</span>')+
       (isUnrecovered(wl)?'<span class="wtag nb">'+t('wd.unrestored')+'</span>':((!wl.backedUp&&!wl.cloud)?'<span class="wtag nb">'+t('h.nb')+'</span>':''))+'</div>'+
       '<div class="bal">'+money(wl.bal)+'</div></div>';
     const mg=document.createElement('button');
@@ -2003,11 +2003,17 @@ function renderWalletDetails(){
   const wl=managedW();if(!wl)return;
   document.getElementById('wdAvatar').textContent=(shownWalletName(wl).trim().charAt(0)||'W').toUpperCase();
   document.getElementById('wdName').textContent=shownWalletName(wl);
-  document.getElementById('wdType').textContent=tagOf(wl.type);
+  const type=document.getElementById('wdType');
+  const showType=wl.type!=='social';
+  type.textContent=showType?tagOf(wl.type):'';
+  type.style.display=showType?'inline-flex':'none';
   const status=document.getElementById('wdStatus');
   const unrecovered=isUnrecovered(wl),unbacked=isUnbacked(wl);
-  status.textContent=unrecovered?t('wd.unrestored'):(wl.cloud?t('wd.clouded'):(wl.backedUp?t('wd.backed'):t('wd.unbacked')));
-  status.className=unrecovered||unbacked?'warn':(wl.cloud||wl.backedUp?'ok':'');
+  const showRiskStatus=unrecovered||unbacked;
+  status.textContent=unrecovered?t('wd.unrestored'):(unbacked?t('wd.unbacked'):'');
+  status.className=showRiskStatus?'warn':'';
+  status.style.display=showRiskStatus?'inline-flex':'none';
+  document.querySelector('#wallet-details .wallet-tags').style.display=showType||showRiskStatus?'flex':'none';
   document.getElementById('wdRestoreRow').style.display=unrecovered?'flex':'none';
   document.getElementById('wdRestoreSub').textContent=wl.cloud?t('wd.restoreCloud'):t('wd.restoreLocal');
   document.getElementById('wdAddressRow').style.display=unrecovered?'none':'flex';
