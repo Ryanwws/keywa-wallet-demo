@@ -286,13 +286,13 @@ textarea.field{height:150px;resize:none;line-height:1.6}
 .detail-delete{height:54px;border:0;border-radius:27px;background:var(--red-bg);color:var(--red);font:700 16px inherit;cursor:pointer;margin-top:22px;width:100%;padding:0;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .address-note{font-size:13px;color:var(--sub);line-height:1.55;margin:8px 0 0}
 .address-list{margin-top:18px;background:var(--card);border-radius:22px;overflow:hidden}
-.address-row{display:flex;align-items:center;gap:12px;padding:15px 16px;border-bottom:1px solid var(--line)}
+.address-row{display:flex;align-items:flex-start;gap:12px;padding:15px 16px;border-bottom:1px solid var(--line)}
 .address-row:last-child{border-bottom:0}
 .chain-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--primary-l);color:var(--primary);font-size:12px;font-weight:800;flex:0 0 36px}
 .address-row .address-copy{min-width:0;flex:1}
 .address-row .address-copy b{font-size:15px;display:block}
-.address-row .address-copy span{display:block;margin-top:4px;font:12px ui-monospace,Menlo,monospace;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.copy-address{border:0;background:var(--soft);color:var(--primary);border-radius:15px;padding:8px 11px;font:700 12px inherit;cursor:pointer}
+.address-row .address-copy span{display:block;margin-top:6px;font:12px/1.55 ui-monospace,Menlo,monospace;color:var(--sub);white-space:normal;overflow-wrap:anywhere;word-break:break-all}
+.copy-address{border:0;background:var(--soft);color:var(--primary);border-radius:15px;padding:8px 11px;font:700 12px inherit;cursor:pointer;flex:0 0 auto;align-self:flex-start}
 .private-key-network{display:flex;align-items:center;gap:14px;margin-top:28px}
 .private-key-network img{width:54px;height:54px;border-radius:50%;object-fit:cover;flex:0 0 54px}
 .private-key-network b{display:block;font-size:19px;line-height:1.25}
