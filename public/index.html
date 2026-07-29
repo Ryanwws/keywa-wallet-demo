@@ -1015,7 +1015,7 @@ const I18N = {
   "cm.t":"选择备份方式","cm.s":"这决定你在新设备上怎么找回钱包","cm.l1":"本地创建 · 自己保管","cm.l2":"进阶用户",
   "cm.l3":"助记词只存在这台设备，我们不留任何副本。创建后回到首页，随时可以查看并备份助记词。",
   "d.s3":"钱包已创建，但还没有备份。回到首页点「未备份」，随时可以查看并抄写助记词。","d.backup":"现在就备份助记词",
-  "t.bkdone":"备份完成，这个钱包已可恢复",
+  "t.bkdone":"备份完成",
   "cm.c1":"云端加密备份","cm.c2":"推荐","cm.c3":"用你设置的密码加密后存到服务器。换设备时，用同一个社交账号登录 + 密码即可恢复。",
   "cm.note":"两种方式都可以之后在「账户 → 安全与备份」里切换。",
   "w.t":"先看懂这三件事","w.s":"助记词就是你的钱包本身，不是密码。",
@@ -1106,7 +1106,7 @@ const I18N = {
   "cm.t":"Choose how to back up","cm.s":"This decides how you recover your wallet on a new device","cm.l1":"Local only · Self-custody","cm.l2":"Advanced",
   "cm.l3":"Your recovery phrase stays on this device and we keep no copy. Once created, you can view and back it up any time from the home screen.",
   "d.s3":"Your wallet is created but not backed up. Tap “Not backed up” on the home screen to view and write down your recovery phrase.","d.backup":"Back up now",
-  "t.bkdone":"Backed up — this wallet can be recovered now",
+  "t.bkdone":"Backup complete",
   "cm.c1":"Encrypted cloud backup","cm.c2":"Recommended","cm.c3":"Encrypted with a password you choose and stored on our server. Sign in with the same social account plus your password to restore.",
   "cm.note":"You can switch either way later in Account → Security & backup.",
   "w.t":"Three things to know first","w.s":"Your recovery phrase is the wallet itself — it isn't a password.",
@@ -1529,7 +1529,7 @@ function copyWords(){
 function startVerify(){
   const idx=[];while(idx.length<3){const r=Math.floor(Math.random()*12);if(idx.indexOf(r)<0)idx.push(r);}
   idx.sort(function(a,b){return a-b;});
-  S.vq=idx;S.vi=0;S.vAnswers=[];S.vErrors=[];
+  S.vq=idx;S.vi=0;S.vAnswers=['','',''];S.vErrors=[];
   S.vOptions=S.mnemonic.slice().sort(function(){return Math.random()-.5;});
   renderVerify();go('verify');
 }
@@ -1561,8 +1561,7 @@ function chooseVerifyWord(word){
   if(active<0||active>2)active=S.vAnswers.findIndex(function(v){return !v;});
   if(active<0)return;
   S.vAnswers[active]=word;S.vErrors=[];
-  const next=S.vAnswers.findIndex(function(v,i){return i>active&&!v;});
-  S.vi=next>-1?next:S.vAnswers.findIndex(function(v){return !v;});
+  S.vi=active<2?active+1:-1;
   renderVerify();
 }
 function confirmVerify(){
